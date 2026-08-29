@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="track-white" x1="604" y1="545" x2="604" y2="615" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#ECF1FF"/>
+    </linearGradient>
+  </defs>
+  <path
+    d="M442 545H709A35 35 0 0 1 744 580A35 35 0 0 1 709 615H442A35 35 0 0 1 407 580A35 35 0 0 1 442 545ZM442 552A28 28 0 0 0 414 580A28 28 0 0 0 442 608H709A28 28 0 0 0 737 580A28 28 0 0 0 709 552Z"
+    fill="#AFC2FF"
+    fill-opacity="0.35"
+    fill-rule="evenodd"
+  />
+  <path
+    d="M442 542H709A38 38 0 0 1 747 580A38 38 0 0 1 709 618H442A38 38 0 0 1 404 580A38 38 0 0 1 442 542ZM442 549A31 31 0 0 0 411 580A31 31 0 0 0 442 611H709A31 31 0 0 0 740 580A31 31 0 0 0 709 549Z"
+    fill="url(#track-white)"
+    fill-rule="evenodd"
+  />
+</svg>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="pearl-white" x1="300" y1="400" x2="370" y2="625" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.48" stop-color="#F8FAFF"/>
+      <stop offset="1" stop-color="#E4EAFC"/>
+    </linearGradient>
+  </defs>
+  <path
+    d="M292 414L356 515L293 613"
+    fill="none"
+    stroke="#AFC2FF"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-opacity="0.30"
+    stroke-width="52"
+  />
+  <path
+    d="M292 414L356 515L293 613"
+    fill="none"
+    stroke="url(#pearl-white)"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="46"
+  />
+</svg>
