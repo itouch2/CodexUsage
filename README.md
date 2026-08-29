@@ -27,7 +27,10 @@ Reset Radar refreshes at most once every 30 minutes during automatic updates;
 a manual refresh checks immediately. Its independent community data comes from
 [`codex-resets.com`](https://codex-resets.com/api/v1/status) and
 [`codexreset.org`](https://codexreset.org/), not from OpenAI account quota data.
-The latest successful result is cached locally.
+The latest successful result is cached locally. Reset alerts are opt-in: enable
+them from the Reset Radar card, use its Settings shortcut if macOS has disabled
+notifications, and send a test alert after access is granted. Alerts can appear
+as banners while the app is in the foreground.
 
 Work Trail is off by default. When enabled, it requests macOS Location Services
 access with approximately 100-meter target accuracy. Samples are stored in this

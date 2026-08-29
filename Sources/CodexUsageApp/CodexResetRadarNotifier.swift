@@ -2,6 +2,25 @@ import CodexUsageCore
 import Foundation
 import UserNotifications
 
+enum CodexResetNotificationAuthorizationState: Equatable {
+    case checking
+    case notDetermined
+    case denied
+    case authorized
+    case provisional
+    case unavailable
+    case failed(String)
+
+    var allowsDelivery: Bool {
+        switch self {
+        case .authorized, .provisional:
+            return true
+        default:
+            return false
+        }
+    }
+}
+
 @MainActor
 final class CodexResetRadarNotifier {
     private let center: UNUserNotificationCenter?
@@ -19,48 +38,93 @@ final class CodexResetRadarNotifier {
         self.defaults = defaults
     }
 
-    func prepareAuthorization() {
-        guard let center else { return }
-        Task {
-            _ = try? await center.requestAuthorization(options: [.alert, .sound])
+    func notificationSettings() async -> CodexResetNotificationAuthorizationState {
+        guard let center else { return .unavailable }
+        let settings = await center.notificationSettings()
+        switch settings.authorizationStatus {
+        case .notDetermined:
+            return .notDetermined
+        case .denied:
+            return .denied
+        case .authorized:
+            return .authorized
+        case .provisional, .ephemeral:
+            return .provisional
+        @unknown default:
+            return .unavailable
         }
     }
 
-    func notifyIfNeeded(_ snapshot: CodexResetRadarSnapshot) {
-        guard let center else { return }
+    func requestAuthorization() async -> CodexResetNotificationAuthorizationState {
+        guard let center else { return .unavailable }
+        do {
+            _ = try await center.requestAuthorization(options: [.alert, .sound])
+            return await notificationSettings()
+        } catch {
+            return .failed(error.localizedDescription)
+        }
+    }
+
+    func notifyIfNeeded(
+        _ snapshot: CodexResetRadarSnapshot?
+    ) async -> CodexResetNotificationAuthorizationState {
+        guard let center else { return .unavailable }
+        let authorization = await notificationSettings()
+        guard authorization.allowsDelivery else { return authorization }
         let lastSignalID = defaults.string(forKey: lastNotifiedSignalIDKey)
         guard let plan = CodexResetRadarPresentation.notificationPlan(
             snapshot: snapshot,
             lastNotifiedSignalID: lastSignalID
         ) else {
-            return
+            return authorization
         }
-        guard !pendingSignalIDs.contains(plan.signalID) else { return }
+        guard !pendingSignalIDs.contains(plan.signalID) else {
+            return authorization
+        }
         pendingSignalIDs.insert(plan.signalID)
 
-        Task {
-            defer { pendingSignalIDs.remove(plan.signalID) }
-            do {
-                let granted = try await center.requestAuthorization(options: [.alert, .sound])
-                guard granted else { return }
+        defer { pendingSignalIDs.remove(plan.signalID) }
+        do {
+            let content = UNMutableNotificationContent()
+            content.title = plan.title
+            content.body = plan.body
+            content.sound = .default
+            content.userInfo = [
+                "sourceURL": plan.sourceURL.absoluteString
+            ]
+            let request = UNNotificationRequest(
+                identifier: "codexUsage.resetRadar.watch",
+                content: content,
+                trigger: nil
+            )
+            try await center.add(request)
+            defaults.set(plan.signalID, forKey: lastNotifiedSignalIDKey)
+            return authorization
+        } catch {
+            return .failed(error.localizedDescription)
+        }
+    }
 
-                let content = UNMutableNotificationContent()
-                content.title = plan.title
-                content.body = plan.body
-                content.sound = .default
-                content.userInfo = [
-                    "sourceURL": plan.sourceURL.absoluteString
-                ]
-                let request = UNNotificationRequest(
-                    identifier: "codexUsage.resetRadar.watch",
-                    content: content,
-                    trigger: nil
-                )
-                try await center.add(request)
-                defaults.set(plan.signalID, forKey: lastNotifiedSignalIDKey)
-            } catch {
-                return
-            }
+    func sendTestNotification() async -> CodexResetNotificationAuthorizationState {
+        guard let center else { return .unavailable }
+        let authorization = await notificationSettings()
+        guard authorization.allowsDelivery else { return authorization }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Codex Usage"
+        content.body = "Reset alerts are ready."
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "codexUsage.resetRadar.test.\(UUID().uuidString)",
+            content: content,
+            trigger: nil
+        )
+
+        do {
+            try await center.add(request)
+            return authorization
+        } catch {
+            return .failed(error.localizedDescription)
         }
     }
 

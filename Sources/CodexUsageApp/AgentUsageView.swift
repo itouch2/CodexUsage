@@ -43,11 +43,7 @@ struct AgentUsageView: View {
 
                 WorkTrailCard(recorder: locationRecorder)
 
-                ResetRadarCard(
-                    snapshot: viewModel.resetRadar,
-                    isLoading: viewModel.isResetRadarRefreshing,
-                    isUnavailable: viewModel.isResetRadarUnavailable
-                )
+                ResetRadarCard(viewModel: viewModel)
 
                 InfoCard(title: "Desktop Widget") {
                     CodexUsagePalettePicker(controller: widgetController)
@@ -205,9 +201,11 @@ private struct WorkTrailCard: View {
 }
 
 private struct ResetRadarCard: View {
-    var snapshot: CodexResetRadarSnapshot?
-    var isLoading: Bool
-    var isUnavailable: Bool
+    @ObservedObject var viewModel: AgentUsageViewModel
+
+    private var snapshot: CodexResetRadarSnapshot? {
+        viewModel.resetRadar
+    }
 
     var body: some View {
         InfoCard(title: "Reset Radar") {
@@ -227,6 +225,81 @@ private struct ResetRadarCard: View {
                 Text("Independent tracker · not affiliated with OpenAI")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+
+                Divider()
+
+                notificationControls
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var notificationControls: some View {
+        switch viewModel.resetNotificationAuthorization {
+        case .checking:
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Checking notification access…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .notDetermined:
+            HStack {
+                Label("Reset alerts are available", systemImage: "bell")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Enable Reset Alerts") {
+                    viewModel.requestResetNotificationAuthorization()
+                }
+                .controlSize(.small)
+            }
+        case .denied:
+            HStack {
+                Label("Notifications are off", systemImage: "bell.slash")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Link(
+                    "Open Settings",
+                    destination: URL(
+                        string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=app.codexusage.local"
+                    )!
+                )
+                .controlSize(.small)
+            }
+        case .authorized, .provisional:
+            HStack {
+                Label("Reset alerts are on", systemImage: "bell.fill")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Send Test Alert") {
+                    viewModel.sendTestResetNotification()
+                }
+                .controlSize(.small)
+            }
+        case .unavailable:
+            Label(
+                "Notifications are unavailable in this build",
+                systemImage: "bell.slash"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        case let .failed(message):
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Notification permission failed", systemImage: "exclamationmark.triangle")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.orange)
+                Text(message)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                Button("Try Again") {
+                    viewModel.requestResetNotificationAuthorization()
+                }
+                .controlSize(.small)
             }
         }
     }
@@ -257,14 +330,14 @@ private struct ResetRadarCard: View {
             activeWatchContent(watch)
         } else if let reset = snapshot?.latestReset {
             latestResetContent(reset)
-        } else if isLoading {
+        } else if viewModel.isResetRadarRefreshing {
             HStack(spacing: 8) {
                 ProgressView()
                     .controlSize(.small)
                 Text("Checking Tibo's public reset signals…")
                     .foregroundStyle(.secondary)
             }
-        } else if isUnavailable {
+        } else if viewModel.isResetRadarUnavailable {
             Label("Reset radar is temporarily unavailable", systemImage: "wifi.slash")
                 .foregroundStyle(.secondary)
         } else {

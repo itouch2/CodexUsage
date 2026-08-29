@@ -1,6 +1,7 @@
 import AppKit
 import CodexUsageCore
 import SwiftUI
+import UserNotifications
 
 @main
 struct CodexUsageApp: App {
@@ -24,6 +25,7 @@ struct CodexUsageApp: App {
                     guard !didStartRuntime else { return }
                     didStartRuntime = true
                     viewModel.startAutomaticRefresh()
+                    viewModel.refreshResetNotificationAuthorization()
                     locationRecorder.resumeIfEnabled()
                     CodexUsageDesktopWidgetController.shared.show(
                         viewModel: viewModel
@@ -66,8 +68,12 @@ struct CodexUsageApp: App {
 }
 
 @MainActor
-final class CodexUsageAppDelegate: NSObject, NSApplicationDelegate {
+final class CodexUsageAppDelegate: NSObject,
+    NSApplicationDelegate,
+    UNUserNotificationCenterDelegate
+{
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UNUserNotificationCenter.current().delegate = self
         if let iconURL = Bundle.main.url(
             forResource: "CodexUsageIcon",
             withExtension: "icns"
@@ -80,6 +86,16 @@ final class CodexUsageAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         CodexUsageDesktopWidgetController.shared.savePosition()
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (
+            UNNotificationPresentationOptions
+        ) -> Void
+    ) {
+        completionHandler([.banner, .sound])
     }
 }
 

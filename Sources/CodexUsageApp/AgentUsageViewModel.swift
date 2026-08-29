@@ -9,6 +9,8 @@ final class AgentUsageViewModel: ObservableObject {
     @Published private(set) var resetRadar: CodexResetRadarSnapshot?
     @Published private(set) var isResetRadarRefreshing = false
     @Published private(set) var isResetRadarUnavailable = false
+    @Published private(set) var resetNotificationAuthorization:
+        CodexResetNotificationAuthorizationState = .checking
 
     private let collector: UsageCollector
     private let resetRadarClient = CodexResetRadarClient()
@@ -32,7 +34,6 @@ final class AgentUsageViewModel: ObservableObject {
             sessions: []
         )
         self.resetRadar = resetRadarCache.load()
-        resetRadarNotifier.prepareAuthorization()
         refresh()
     }
 
@@ -70,6 +71,32 @@ final class AgentUsageViewModel: ObservableObject {
         refreshTimer = nil
     }
 
+    func refreshResetNotificationAuthorization() {
+        let notifier = resetRadarNotifier
+        Task {
+            resetNotificationAuthorization = await notifier.notificationSettings()
+        }
+    }
+
+    func requestResetNotificationAuthorization() {
+        let notifier = resetRadarNotifier
+        Task {
+            let authorization = await notifier.requestAuthorization()
+            resetNotificationAuthorization = authorization
+            guard authorization.allowsDelivery else { return }
+            resetNotificationAuthorization = await notifier.notifyIfNeeded(
+                resetRadar
+            )
+        }
+    }
+
+    func sendTestResetNotification() {
+        let notifier = resetRadarNotifier
+        Task {
+            resetNotificationAuthorization = await notifier.sendTestNotification()
+        }
+    }
+
     var codexRemainingPercent: Int? {
         guard let primaryLimit = snapshot.status(for: .codex)?.primaryLimit else {
             return nil
@@ -94,7 +121,8 @@ final class AgentUsageViewModel: ObservableObject {
                     .discardingExpiredWatch(at: Date())
                 resetRadarCache.save(next)
                 resetRadar = next
-                resetRadarNotifier.notifyIfNeeded(next)
+                resetNotificationAuthorization = await resetRadarNotifier
+                    .notifyIfNeeded(next)
                 isResetRadarUnavailable = false
             } catch {
                 isResetRadarUnavailable = resetRadar == nil
