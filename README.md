@@ -9,6 +9,17 @@ A standalone macOS 13+ SwiftUI app extracted from Dots. It provides:
 - independent Reset Radar community signals and optional system notifications;
 - an optional Work Trail using this Mac's approximate location.
 
+## Widget
+
+![Codex Usage desktop widget](docs/images/codex-usage-widget.png)
+
+### Notification preview (mockup)
+
+The banner mockup uses the app icon compiled from the current Icon Composer
+source.
+
+![Codex Usage macOS reset notification mockup](docs/images/codex-usage-notification-mockup.png)
+
 ## Data sources and refresh
 
 Codex usage refreshes at launch and once per minute. The local collector uses
@@ -42,10 +53,9 @@ can be cleared from the dashboard. Place names are resolved through the system
 
 The authoritative app icon source is the layered Icon Composer document at
 `Resources/AppIcon/CodexUsage.icon`. Packaging compiles it with Xcode's asset
-compiler into `Assets.car` and `CodexUsage.icns`; the older PNG/ICNS files in
-`Resources/AppIcon/` are retained only as visual history and are not active.
-If those legacy raster files are needed, regenerate them manually with
-`scripts/generate_app_icon.sh`. Normal packaging does not run that script.
+compiler into `Assets.car` and `CodexUsage.icns`. Legacy PNG/ICNS exports are
+not tracked; regenerate them manually with `scripts/generate_app_icon.sh` if
+needed. Normal packaging does not run that script.
 
 ## Build and test
 
