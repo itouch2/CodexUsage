@@ -12,30 +12,6 @@ struct AgentUsageView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Codex Usage")
-                            .font(.largeTitle.weight(.semibold))
-                        Text("Quota, local token history, and reset signals")
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Button {
-                        viewModel.refresh()
-                    } label: {
-                        if viewModel.isRefreshing {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                    }
-                    .disabled(viewModel.isRefreshing)
-                    .help("Refresh")
-                }
-
                 ProviderCard(
                     status: viewModel.snapshot.status(for: .codex),
                     currentCycleUsage: viewModel.snapshot.codexCurrentCycleUsage
@@ -49,7 +25,11 @@ struct AgentUsageView: View {
                     CodexUsagePalettePicker(controller: widgetController)
 
                     HStack {
-                        Button(widgetController.isEditing ? "Done Editing" : "Edit Widget") {
+                        Button(
+                            widgetController.isEditing
+                                ? "Done Editing"
+                                : "Bring to Front"
+                        ) {
                             widgetController.toggleEditing()
                         }
                         .disabled(!widgetController.isVisible)
@@ -126,9 +106,24 @@ struct AgentUsageView: View {
                     }
                 }
             }
-            .padding(24)
             .frame(maxWidth: .infinity, alignment: .topLeading)
+            .overlay(alignment: .topTrailing) {
+                Button {
+                    viewModel.refresh()
+                } label: {
+                    if viewModel.isRefreshing {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+                .disabled(viewModel.isRefreshing)
+                .help("Refresh")
+            }
+            .padding(24)
         }
+        .tint(widgetController.palette.tintColor)
     }
 }
 
@@ -421,7 +416,7 @@ private struct ProviderCard: View {
     var currentCycleUsage: CodexCycleUsage?
 
     var body: some View {
-        InfoCard(title: status?.provider.rawValue ?? "Unknown") {
+        InfoCard(title: "Usage") {
             VStack(alignment: .leading, spacing: 12) {
                 MetricRow(
                     title: "Latest event",
@@ -454,7 +449,11 @@ private struct ProviderCard: View {
                 }
 
                 if let plan = status?.planType {
-                    StatusPill(title: plan, systemImage: "person.crop.circle", color: .purple)
+                    StatusPill(
+                        title: plan,
+                        systemImage: "person.crop.circle",
+                        color: .purple
+                    )
                 }
             }
         }

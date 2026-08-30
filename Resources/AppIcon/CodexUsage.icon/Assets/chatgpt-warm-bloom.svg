@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- ChatGPT warm lavender to electric blue, with one continuous rim. -->
   <defs>
     <path id="cloud-shape" d="
       M 886.7 512.3
@@ -80,12 +81,33 @@
     <clipPath id="cloud-clip">
       <use href="#cloud-shape"/>
     </clipPath>
-    <linearGradient id="cloud-base" x1="512" y1="130" x2="512" y2="893" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#8D82E3"/>
-      <stop offset="1" stop-color="#6B5FD6"/>
+    <linearGradient id="cloud-base" x1="512" y1="132" x2="512" y2="892" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C9B8F8"/>
+      <stop offset="0.22" stop-color="#A99EF7"/>
+      <stop offset="0.52" stop-color="#7288F7"/>
+      <stop offset="0.78" stop-color="#536BF5"/>
+      <stop offset="1" stop-color="#3527ED"/>
+    </linearGradient>
+    <radialGradient id="center-light" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(506 438) rotate(90) scale(430)">
+      <stop offset="0" stop-color="#D6D9FF" stop-opacity="0.42"/>
+      <stop offset="0.58" stop-color="#A9BEFF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#A9BEFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lower-depth" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(558 876) rotate(-90) scale(350)">
+      <stop offset="0" stop-color="#2D20F0" stop-opacity="0.52"/>
+      <stop offset="0.64" stop-color="#3826E9" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#3826E9" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edge-light" x1="512" y1="128" x2="512" y2="895" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#79ABFF" stop-opacity="0.72"/>
+      <stop offset="0.46" stop-color="#AAB7FF" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#6A5FE2" stop-opacity="0.30"/>
     </linearGradient>
   </defs>
   <use href="#cloud-shape" fill="url(#cloud-base)"/>
-  <use href="#cloud-shape" fill="none" stroke="#C9C4FF" stroke-width="7"/>
-  <use href="#cloud-shape" fill="none" stroke="#FFFFFF" stroke-opacity="0.34" stroke-width="2"/>
+  <g clip-path="url(#cloud-clip)">
+    <rect width="1024" height="1024" fill="url(#center-light)"/>
+    <rect width="1024" height="1024" fill="url(#lower-depth)"/>
+  </g>
+  <use href="#cloud-shape" fill="none" stroke="url(#edge-light)" stroke-width="7"/>
 </svg>

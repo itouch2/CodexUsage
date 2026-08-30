@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codex Usage. Your Codex quota, always in view.</title>
+<meta name="description" content="A macOS menu bar and widget companion for Codex. Live rolling-window quota, token summaries, and reset alerts, on your desktop.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%238b7cf0'/%3E%3Cpath d='M20 24l10 8-10 8' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Crect x='34' y='36' width='12' height='5' rx='2.5' fill='white'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0b0b0f;
+    --text: #f5f5f7;
+    --muted: #a2a2ad;
+    --line: rgba(255, 255, 255, 0.09);
+    --line-strong: rgba(255, 255, 255, 0.16);
+    --accent-strong: #f0709a;
+    --violet: #8b7cf0;
+    --violet-ink: #b7abf8;
+    --violet-soft: rgba(139, 124, 240, 0.13);
+    --btn-bg: #f5f5f7;
+    --btn-ink: #101014;
+    --code-bg: #101016;
+    --shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 40px; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(700px 380px at 80% -8%, rgba(139, 124, 240, 0.13), transparent 70%),
+      radial-gradient(600px 320px at 12% -4%, rgba(238, 93, 140, 0.09), transparent 70%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    overflow-x: clip;
+  }
+  ::selection { background: rgba(139, 124, 240, 0.38); color: #fff; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 0 22px; }
+
+  a { -webkit-tap-highlight-color: transparent; }
+  a:focus-visible, .btn:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+
+  header { padding: 28px 0 0; }
+  .top { display: flex; align-items: center; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); text-decoration: none; transition: opacity 0.2s; }
+  .brand:hover { opacity: 0.82; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 999px; border: none; cursor: pointer;
+    font-weight: 600; text-decoration: none; white-space: nowrap;
+    transition: transform 0.25s var(--ease), background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.25s var(--ease);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-ink); padding: 11px 20px; font-size: 14.5px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45); }
+  .btn-ghost { color: var(--muted); padding: 11px 18px; font-size: 14.5px; border: 1px solid var(--line); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--line-strong); background: rgba(255, 255, 255, 0.04); transform: translateY(-1px); }
+  .top .btn { margin-left: auto; }
+
+  .hero { padding: 76px 0 0; }
+  h1 { font-size: clamp(2.1rem, 6vw, 3rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; text-wrap: balance; }
+  .hero p { color: var(--muted); font-size: 16.5px; max-width: 44ch; margin: 16px 0 28px; }
+  .hero-ctas { display: flex; gap: 10px; }
+  .hero-shot { position: relative; margin: 52px auto 0; max-width: 410px; }
+  .hero-shot::before {
+    content: ""; position: absolute; inset: 12% -8% -12%; z-index: -1;
+    background: radial-gradient(closest-side, rgba(139, 124, 240, 0.26), transparent 72%);
+    filter: blur(14px);
+  }
+  .hero-shot img { display: block; width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--line-strong); box-shadow: var(--shadow); }
+
+  section { padding: 88px 0 0; }
+  h2 { font-size: 22px; font-weight: 650; letter-spacing: -0.02em; margin-bottom: 34px; text-wrap: balance; }
+  .feat { display: grid; grid-template-columns: 1fr 1fr; gap: 40px 48px; }
+  .feat-item { border-top: 1px solid var(--line); padding-top: 24px; }
+  .feat-icon {
+    width: 40px; height: 40px; border-radius: 12px; margin-bottom: 18px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--violet-ink); background: var(--violet-soft);
+    border: 1px solid rgba(139, 124, 240, 0.3);
+  }
+  .feat-icon svg { width: 21px; height: 21px; }
+  .feat-icon .pink { stroke: var(--accent-strong); }
+  .feat h3 { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; margin-bottom: 9px; }
+  .feat p { color: var(--muted); font-size: 15px; line-height: 1.62; }
+  .also { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 22px; color: var(--muted); font-size: 14px; }
+  .also strong { color: var(--text); font-weight: 600; }
+
+  .codecard {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 16px;
+    margin-top: 26px; overflow: hidden; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13.5px;
+  }
+  .codecard-bar { display: flex; gap: 7px; padding: 13px 16px; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.025); }
+  .codecard-bar i { width: 10px; height: 10px; border-radius: 50%; }
+  .codecard-bar i:nth-child(1) { background: #ff5f57; }
+  .codecard-bar i:nth-child(2) { background: #febc2e; }
+  .codecard-bar i:nth-child(3) { background: #28c840; }
+  .codecard-body { padding: 15px 22px 17px; line-height: 2.05; color: #e8e8ee; overflow-x: auto; }
+  .codecard .p { color: var(--violet); user-select: none; }
+  .codecard .c { color: #7d7d8a; }
+  .get p { color: var(--muted); font-size: 15px; }
+  .get .btn { margin-top: 24px; }
+
+  footer { margin-top: 88px; border-top: 1px solid var(--line); padding: 26px 0 34px; }
+  footer p { color: var(--muted); font-size: 13px; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(16px); filter: blur(6px); }
+    to { opacity: 1; transform: none; filter: blur(0); }
+  }
+  @keyframes blip {
+    0% { opacity: 0; transform: scale(0.3); }
+    45% { opacity: 1; transform: scale(1.35); }
+    70% { transform: scale(0.92); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero > * { animation: rise 0.85s var(--ease) both; }
+    .hero h1 { animation-delay: 0.03s; }
+    .hero p { animation-delay: 0.1s; }
+    .hero-ctas { animation-delay: 0.17s; }
+    .hero-shot { animation-delay: 0.26s; }
+
+    html.js .feat-icon .draw { stroke-dasharray: 1; stroke-dashoffset: 1; }
+    html.js .feat-icon .blip { opacity: 0; transform-box: fill-box; transform-origin: center; }
+    html.js .feat.in .draw { transition: stroke-dashoffset 1.1s var(--ease) 0.2s; stroke-dashoffset: 0; }
+    html.js .feat.in .blip { animation: blip 0.9s var(--ease) 1.05s both; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn, .brand { transition: none; }
+  }
+  @media (max-width: 560px) {
+    .feat { grid-template-columns: 1fr; gap: 32px; }
+    .hero { padding-top: 52px; }
+    section { padding-top: 72px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap top">
+    <a class="brand" href="#">
+      <svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="16" fill="#8b7cf0"/>
+        <path d="M20 24l10 8-10 8" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <rect x="34" y="36" width="12" height="5" rx="2.5" fill="#fff"/>
+      </svg>
+      Codex Usage
+    </a>
+    <a class="btn btn-primary" href="#get">Get the app</a>
+  </div>
+</header>
+
+<div class="wrap hero">
+  <h1>Your Codex quota, always in view.</h1>
+  <p>Live rolling-window usage, token summaries, and reset alerts on your desktop.</p>
+  <div class="hero-ctas">
+    <a class="btn btn-primary" href="#get">Get the app</a>
+    <a class="btn btn-ghost" href="#features">See features</a>
+  </div>
+  <div class="hero-shot">
+    <img src="../images/codex-usage-widget.png" alt="Codex Usage desktop widget showing 69 percent of the rolling window used, a usage sparkline, and the reset countdown" width="820" height="512" decoding="async">
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Two things it does best</h2>
+    <div class="feat">
+      <div class="feat-item">
+        <div class="feat-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 20h17" opacity="0.35"/>
+            <path d="M5 18.5 13.5 7" stroke-width="1.5" stroke-dasharray="0.1 3" opacity="0.45"/>
+            <path class="draw pink" pathLength="1" d="M4.5 16.5l3.2-1.8 2.8 1.6 3.4-6.2 2.6 2.4 2-1.6"/>
+          </svg>
+        </div>
+        <h3>See your burn, not just a number.</h3>
+        <p>The widget charts token consumption against time in the rolling window, with a steady-pace guide line. How much you used and how fast, clear in one glance.</p>
+      </div>
+      <div class="feat-item">
+        <div class="feat-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8a4 4 0 0 1 4 4" opacity="0.5"/>
+            <path d="M12 12l6-6" opacity="0.85"/>
+            <path class="draw" pathLength="1" d="M16.25 4.64A8.5 8.5 0 1 0 18 6"/>
+            <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/>
+            <circle class="blip" cx="18" cy="6" r="1.4" fill="#f0709a" stroke="none"/>
+          </svg>
+        </div>
+        <h3>Know when tokens reset.</h3>
+        <p>Reset Radar reads community reset signals and alerts you ahead of the window, so you always know when fresh quota lands and can plan heavy runs around it.</p>
+      </div>
+    </div>
+    <p class="also"><strong>Also on board:</strong> menu bar status, a movable widget with palette controls, session and daily summaries, and local-only privacy.</p>
+  </div>
+</section>
+
+<section id="get" class="get">
+  <div class="wrap">
+    <h2>Build it. Run it. Pin it.</h2>
+    <p>A Swift package for macOS 13 and later. One script packages and launches the app.</p>
+    <div class="codecard">
+      <div class="codecard-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="codecard-body">
+        <div><span class="p">$</span> swift build</div>
+        <div><span class="p">$</span> swift test</div>
+        <div><span class="p">$</span> script/build_and_run.sh <span class="c"># package and open the app</span></div>
+      </div>
+    </div>
+    <a class="btn btn-ghost" href="../../README.md">Read the README</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Codex Usage. A quota companion for Codex on macOS.</p>
+  </div>
+</footer>
+
+<script>
+  document.documentElement.classList.add('js');
+  if (window.matchMedia('(prefers-reduced-motion: no-preference)').matches && 'IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.35 });
+    io.observe(document.querySelector('.feat'));
+  }
+</script>
+</body>
+</html>

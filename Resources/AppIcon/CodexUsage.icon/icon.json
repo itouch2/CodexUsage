@@ -2,18 +2,6 @@
   "fill" : {
     "solid" : "extended-srgb:1.00000,1.00000,1.00000,1.00000"
   },
-  "fill-specializations" : [
-    {
-      "appearance" : "dark",
-      "value" : {
-        "solid" : "extended-srgb:1.00000,1.00000,1.00000,1.00000"
-      }
-    },
-    {
-      "appearance" : "tinted",
-      "value" : "automatic"
-    }
-  ],
   "groups" : [
     {
       "layers" : [
@@ -79,8 +67,8 @@
               }
             }
           ],
-          "glass" : true,
-          "image-name" : "codex-bloom.svg",
+          "glass" : false,
+          "image-name" : "chatgpt-warm-bloom.svg",
           "name" : "Codex Bloom"
         }
       ],
@@ -88,7 +76,7 @@
         "kind" : "layer-color",
         "opacity" : 0.22
       },
-      "specular" : false,
+      "specular" : true,
       "translucency" : {
         "enabled" : false,
         "value" : 0

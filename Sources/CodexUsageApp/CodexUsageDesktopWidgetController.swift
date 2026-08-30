@@ -371,7 +371,6 @@ final class CodexUsageDesktopWidgetController: NSObject, ObservableObject, NSWin
                 viewModel: viewModel,
                 controller: self
             )
-            .tint(.codexUsageAccent)
         )
         window.contentView = hostingView
         window.acceptsMouseMovedEvents = true

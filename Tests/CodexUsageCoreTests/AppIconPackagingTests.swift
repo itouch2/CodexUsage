@@ -12,7 +12,7 @@ final class AppIconPackagingTests: XCTestCase {
         let compiler = try sourceText(at: "scripts/compile_app_icon.sh")
         let bloom = try String(
             contentsOf: sourceURL.appendingPathComponent(
-                "Assets/codex-bloom.svg"
+                "Assets/chatgpt-warm-bloom.svg"
             ),
             encoding: .utf8
         )
@@ -20,7 +20,7 @@ final class AppIconPackagingTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: sourceURL.path))
         for asset in [
             "icon.json",
-            "Assets/codex-bloom.svg",
+            "Assets/chatgpt-warm-bloom.svg",
             "Assets/terminal-arrow.svg",
             "Assets/progress-track.svg",
             "Assets/progress-fill.svg"
@@ -38,11 +38,14 @@ final class AppIconPackagingTests: XCTestCase {
         XCTAssertTrue(compiler.contains("Assets.car"))
         XCTAssertTrue(bloom.contains("id=\"cloud-shape\""))
         XCTAssertTrue(bloom.contains("id=\"cloud-base\""))
-        XCTAssertFalse(bloom.contains("radialGradient"))
-        XCTAssertFalse(bloom.contains("pink-light"))
-        XCTAssertFalse(bloom.contains("blue-light"))
-        XCTAssertTrue(bloom.contains("#8D82E3"))
-        XCTAssertTrue(bloom.contains("#6B5FD6"))
+        XCTAssertTrue(bloom.contains("id=\"center-light\""))
+        XCTAssertTrue(bloom.contains("id=\"lower-depth\""))
+        XCTAssertTrue(bloom.contains("#C9B8F8"))
+        XCTAssertTrue(bloom.contains("#7288F7"))
+        XCTAssertTrue(bloom.contains("#3527ED"))
+        XCTAssertFalse(bloom.contains("champagne-complement"))
+        XCTAssertFalse(bloom.contains("#F27FB5"))
+        XCTAssertFalse(bloom.contains("#70D9FF"))
 
         let icon = try String(
             contentsOf: sourceURL.appendingPathComponent("icon.json"),
@@ -61,6 +64,7 @@ final class AppIconPackagingTests: XCTestCase {
             encoding: .utf8
         )
         XCTAssertTrue(icon.contains("Terminal Arrow"))
+        XCTAssertFalse(icon.contains("Bloom Highlights"))
         XCTAssertTrue(icon.contains(
             "extended-srgb:1.00000,1.00000,1.00000,1.00000"
         ))

@@ -3,11 +3,6 @@ import SwiftUI
 import UsageCore
 
 extension Color {
-    static let codexUsageAccent = Color(
-        red: 0.10,
-        green: 0.62,
-        blue: 1.00
-    )
     static let codexUsageCardFill = Color(nsColor: .textBackgroundColor)
     static let codexUsageCardStroke = Color.black.opacity(0.08)
 }
@@ -18,27 +13,31 @@ struct StatusPill: View {
     var color: Color
 
     var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(color)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background(color.opacity(0.16), in: Capsule())
-            .overlay {
-                Capsule()
-                    .stroke(color.opacity(0.18), lineWidth: 1)
-            }
+        HStack(alignment: .center, spacing: 6) {
+            Image(systemName: systemImage)
+            Text(title)
+        }
+        .font(.caption.weight(.medium))
+        .foregroundStyle(color)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(color.opacity(0.16), in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(color.opacity(0.18), lineWidth: 1)
+        }
     }
 }
 
 struct InfoCard<Content: View>: View {
     var title: String
+    var titleFont: Font = .headline
     @ViewBuilder var content: Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.headline)
+                .font(titleFont)
 
             VStack(alignment: .leading, spacing: 14) {
                 content

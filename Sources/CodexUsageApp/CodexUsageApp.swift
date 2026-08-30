@@ -14,7 +14,6 @@ struct CodexUsageApp: App {
     var body: some Scene {
         WindowGroup("Codex Usage", id: "dashboard") {
             AgentUsageView(viewModel: viewModel)
-                .tint(.codexUsageAccent)
                 .frame(
                     minWidth: 680,
                     idealWidth: 760,
@@ -50,18 +49,11 @@ struct CodexUsageApp: App {
 
         MenuBarExtra {
             CodexUsageMenuBarView(viewModel: viewModel)
-                .tint(.codexUsageAccent)
                 .frame(width: 340)
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "chart.xyaxis.line")
-                if let remainingPercent = viewModel.codexRemainingPercent {
-                    Text("\(remainingPercent)%")
-                        .monospacedDigit()
-                }
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Codex Usage")
+            CodexUsageMenuBarLabel(
+                remainingPercent: viewModel.codexRemainingPercent
+            )
         }
         .menuBarExtraStyle(.window)
     }
@@ -121,7 +113,10 @@ private struct CodexUsageMenuBarView: View {
                 .help("Open Dashboard")
             }
 
-            InfoCard(title: "Account") {
+            InfoCard(
+                title: "Account",
+                titleFont: .subheadline.weight(.semibold)
+            ) {
                 if let remainingPercent = viewModel.codexRemainingPercent {
                     Text("\(remainingPercent)% left")
                         .font(.title3.monospacedDigit().weight(.semibold))
@@ -161,12 +156,17 @@ private struct CodexUsageMenuBarView: View {
                 }
             }
 
-            InfoCard(title: "Desktop Widget") {
+            InfoCard(
+                title: "Desktop Widget",
+                titleFont: .subheadline.weight(.semibold)
+            ) {
                 CodexUsagePalettePicker(controller: widgetController)
 
                 HStack {
                     Button(
-                        widgetController.isEditing ? "Done Editing" : "Edit"
+                        widgetController.isEditing
+                            ? "Done Editing"
+                            : "Bring to Front"
                     ) {
                         widgetController.toggleEditing()
                     }
@@ -201,6 +201,7 @@ private struct CodexUsageMenuBarView: View {
             }
         }
         .padding(16)
+        .tint(widgetController.palette.tintColor)
         .onAppear {
             viewModel.refresh()
         }

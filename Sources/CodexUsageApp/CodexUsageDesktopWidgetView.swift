@@ -110,6 +110,10 @@ enum CodexUsageWidgetPalette: String, CaseIterable, Identifiable {
             )
         }
     }
+
+    var tintColor: Color {
+        usageRingColor
+    }
 }
 
 struct CodexUsagePalettePicker: View {
@@ -216,6 +220,7 @@ struct CodexUsageDesktopWidgetView: View {
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(accessibilitySummary)
+            .tint(controller.palette.tintColor)
     }
 
     private var widgetBackgroundColor: Color {
