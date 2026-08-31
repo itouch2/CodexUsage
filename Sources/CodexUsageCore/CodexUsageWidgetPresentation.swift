@@ -187,10 +187,15 @@ public enum CodexUsageWidgetPresentation {
             resetsAt: resetsAt
         )
 
+        var maximumUsageProgress = 0.0
         let sampledPoints = (matchingSamples + [currentSample])
             .sorted { $0.capturedAt < $1.capturedAt }
             .map { sample in
-                CodexUsagePacePoint(
+                maximumUsageProgress = max(
+                    maximumUsageProgress,
+                    consumedUsageProgress(usedPercent: sample.usedPercent)
+                )
+                return CodexUsagePacePoint(
                     timeProgress: min(
                         max(
                             sample.capturedAt.timeIntervalSince(windowStart)
@@ -199,9 +204,7 @@ public enum CodexUsageWidgetPresentation {
                         ),
                         1
                     ),
-                    usageProgress: consumedUsageProgress(
-                        usedPercent: sample.usedPercent
-                    )
+                    usageProgress: maximumUsageProgress
                 )
             }
 

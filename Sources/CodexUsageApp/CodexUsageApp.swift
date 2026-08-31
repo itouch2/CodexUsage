@@ -15,10 +15,10 @@ struct CodexUsageApp: App {
         WindowGroup("Codex Usage", id: "dashboard") {
             AgentUsageView(viewModel: viewModel)
                 .frame(
-                    minWidth: 680,
-                    idealWidth: 760,
+                    minWidth: 860,
+                    idealWidth: 1020,
                     minHeight: 560,
-                    idealHeight: 720
+                    idealHeight: 660
                 )
                 .task {
                     guard !didStartRuntime else { return }
@@ -31,6 +31,7 @@ struct CodexUsageApp: App {
                     )
                 }
         }
+        .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(after: .appInfo) {
                 Button("Refresh Usage") {
@@ -201,7 +202,6 @@ private struct CodexUsageMenuBarView: View {
             }
         }
         .padding(16)
-        .tint(widgetController.palette.tintColor)
         .onAppear {
             viewModel.refresh()
         }

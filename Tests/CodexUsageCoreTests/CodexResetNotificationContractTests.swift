@@ -21,7 +21,7 @@ final class CodexResetNotificationContractTests: XCTestCase {
             at: "Sources/CodexUsageApp/AgentUsageViewModel.swift"
         )
         let view = try sourceText(
-            at: "Sources/CodexUsageApp/AgentUsageView.swift"
+            at: "Sources/CodexUsageApp/WidgetInspectorView.swift"
         )
 
         XCTAssertFalse(viewModel.contains("prepareAuthorization()"))
@@ -29,9 +29,10 @@ final class CodexResetNotificationContractTests: XCTestCase {
             "requestResetNotificationAuthorization"
         ))
         XCTAssertTrue(viewModel.contains("sendTestResetNotification"))
-        XCTAssertTrue(view.contains("Enable Reset Alerts"))
+        XCTAssertTrue(view.contains("Text(\"Reset alerts\")"))
+        XCTAssertTrue(view.contains("Button(\"Enable\")"))
         XCTAssertTrue(view.contains("Send Test Alert"))
-        XCTAssertTrue(view.contains("Notifications are off"))
+        XCTAssertTrue(view.contains("Button(\"Open Settings\")"))
         XCTAssertTrue(view.contains(
             "com.apple.Notifications-Settings.extension?id=app.codexusage.local"
         ))

@@ -20,7 +20,6 @@
     --btn-bg: #f5f5f7;
     --btn-ink: #101014;
     --code-bg: #101016;
-    --shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
     --ease: cubic-bezier(0.16, 1, 0.3, 1);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -63,18 +62,18 @@
   h1 { font-size: clamp(2.1rem, 6vw, 3rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; text-wrap: balance; }
   .hero p { color: var(--muted); font-size: 16.5px; max-width: 44ch; margin: 16px 0 28px; }
   .hero-ctas { display: flex; gap: 10px; }
-  .hero-shot { position: relative; margin: 52px auto 0; max-width: 410px; }
+  .hero-shot { position: relative; margin: 52px auto 0; max-width: 640px; }
   .hero-shot::before {
     content: ""; position: absolute; inset: 12% -8% -12%; z-index: -1;
     background: radial-gradient(closest-side, rgba(139, 124, 240, 0.26), transparent 72%);
     filter: blur(14px);
   }
-  .hero-shot img { display: block; width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--line-strong); box-shadow: var(--shadow); }
+  .hero-shot img { display: block; width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--line-strong); }
 
   section { padding: 88px 0 0; }
   h2 { font-size: 22px; font-weight: 650; letter-spacing: -0.02em; margin-bottom: 34px; text-wrap: balance; }
   .feat { display: grid; grid-template-columns: 1fr 1fr; gap: 40px 48px; }
-  .feat-item { border-top: 1px solid var(--line); padding-top: 24px; }
+  .feat-item { border-top: 1px solid var(--line); padding-top: 24px; display: flex; flex-direction: column; min-width: 0; }
   .feat-icon {
     width: 40px; height: 40px; border-radius: 12px; margin-bottom: 18px;
     display: flex; align-items: center; justify-content: center;
@@ -84,7 +83,21 @@
   .feat-icon svg { width: 21px; height: 21px; }
   .feat-icon .pink { stroke: var(--accent-strong); }
   .feat h3 { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; margin-bottom: 9px; }
-  .feat p { color: var(--muted); font-size: 15px; line-height: 1.62; }
+  .feat p { color: var(--muted); font-size: 15px; line-height: 1.62; margin-bottom: 28px; }
+  .feature-media {
+    position: relative; overflow: hidden;
+    border-radius: 14px; border: 1px solid var(--line-strong); background: #141419;
+  }
+  .feature-media img { position: absolute; display: block; max-width: none; height: auto; }
+  .feature-media-chart { width: 84%; aspect-ratio: 1.3; }
+  .feature-media-chart img { width: 346%; left: -31%; top: -112%; }
+  .feature-media-notification { width: 84%; aspect-ratio: 1.3; isolation: isolate; }
+  .feature-media-notification::before {
+    content: ""; position: absolute; inset: -18px; z-index: 0;
+    background: url("../images/codex-usage-reset-alert-ready.png") center / cover no-repeat;
+    filter: blur(18px); transform: scale(1.08);
+  }
+  .feature-media-notification img { inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: contain; }
   .also { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 22px; color: var(--muted); font-size: 14px; }
   .also strong { color: var(--text); font-weight: 600; }
 
@@ -164,7 +177,7 @@
     <a class="btn btn-ghost" href="#features">See features</a>
   </div>
   <div class="hero-shot">
-    <img src="../images/codex-usage-widget.png" alt="Codex Usage desktop widget showing 69 percent of the rolling window used, a usage sparkline, and the reset countdown" width="820" height="512" decoding="async">
+    <img src="../images/codex-usage-dashboard.png" alt="Codex Usage macOS dashboard showing the desktop widget preview, appearance palettes, reset alerts, and Work Trail settings" width="1720" height="1184" decoding="async">
   </div>
 </div>
 
@@ -182,6 +195,9 @@
         </div>
         <h3>See your burn, not just a number.</h3>
         <p>The widget charts token consumption against time in the rolling window, with a steady-pace guide line. How much you used and how fast, clear in one glance.</p>
+        <figure class="feature-media feature-media-chart">
+          <img src="../images/codex-usage-dashboard.png" alt="Codex Usage rolling-window consumption chart" width="1720" height="1184" loading="lazy" decoding="async">
+        </figure>
       </div>
       <div class="feat-item">
         <div class="feat-icon" aria-hidden="true">
@@ -194,7 +210,10 @@
           </svg>
         </div>
         <h3>Know when tokens reset.</h3>
-        <p>Reset Radar reads community reset signals and alerts you ahead of the window, so you always know when fresh quota lands and can plan heavy runs around it.</p>
+        <p>Reset Radar watches community signals and alerts you before each reset, so you know when fresh quota lands and can plan heavier runs.</p>
+        <figure class="feature-media feature-media-notification">
+          <img src="../images/codex-usage-reset-alert-ready.png" alt="Codex Usage reset alerts are ready notification" width="848" height="538" loading="lazy" decoding="async">
+        </figure>
       </div>
     </div>
     <p class="also"><strong>Also on board:</strong> menu bar status, a movable widget with palette controls, session and daily summaries, and local-only privacy.</p>

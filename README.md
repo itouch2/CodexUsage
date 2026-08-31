@@ -9,16 +9,16 @@ A standalone macOS 13+ SwiftUI app extracted from Dots. It provides:
 - independent Reset Radar community signals and optional system notifications;
 - an optional Work Trail using this Mac's approximate location.
 
-## Widget
+## Dashboard
 
-![Codex Usage desktop widget](docs/images/codex-usage-widget.png)
+![Codex Usage dashboard with desktop widget preview and controls](docs/images/codex-usage-dashboard.png)
 
 ### Notification preview (mockup)
 
 The banner mockup uses the app icon compiled from the current Icon Composer
 source.
 
-<img src="docs/images/codex-usage-notification-mockup.png" alt="Codex Usage macOS reset notification mockup" width="640">
+<img src="docs/images/codex-usage-reset-alert-ready.png" alt="Codex Usage macOS reset alert preview" width="640">
 
 ## Data sources and refresh
 

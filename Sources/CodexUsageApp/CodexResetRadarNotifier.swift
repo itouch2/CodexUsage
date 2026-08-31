@@ -112,7 +112,7 @@ final class CodexResetRadarNotifier {
 
         let content = UNMutableNotificationContent()
         content.title = "Codex Usage"
-        content.body = "Reset alerts are ready."
+        content.body = "Possible reset • 80% by end of Saturday"
         content.sound = .default
         let request = UNNotificationRequest(
             identifier: "codexUsage.resetRadar.test.\(UUID().uuidString)",

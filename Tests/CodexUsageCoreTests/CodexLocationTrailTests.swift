@@ -115,15 +115,18 @@ final class CodexLocationRecordingContractTests: XCTestCase {
     }
 
     func testCodexUsageShowsExplicitLocalLocationControls() throws {
-        let source = try sourceText(
+        let root = try sourceText(
             at: "Sources/CodexUsageApp/AgentUsageView.swift"
         )
+        let inspector = try sourceText(
+            at: "Sources/CodexUsageApp/WidgetInspectorView.swift"
+        )
 
-        XCTAssertTrue(source.contains("Work Trail"))
-        XCTAssertTrue(source.contains("Record time and location"))
-        XCTAssertTrue(source.contains("Location stays on this Mac"))
-        XCTAssertTrue(source.contains("Clear Location History"))
-        XCTAssertTrue(source.contains("CodexLocationRecorder.shared"))
+        XCTAssertTrue(root.contains("CodexLocationRecorder.shared"))
+        XCTAssertTrue(inspector.contains("Toggle(\"Work Trail\""))
+        XCTAssertTrue(inspector.contains("recorder.setRecordingEnabled"))
+        XCTAssertTrue(inspector.contains("Location stays on this Mac"))
+        XCTAssertTrue(inspector.contains("Clear Location History"))
     }
 
     func testAppDeclaresLocationPurposeAndSandboxCapability() throws {

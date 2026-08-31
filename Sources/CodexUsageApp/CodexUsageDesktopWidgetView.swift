@@ -29,7 +29,7 @@ enum CodexUsageWidgetPalette: String, CaseIterable, Identifiable {
         }
     }
 
-    var timeRingColor: Color {
+    var referenceLineColor: Color {
         switch self {
         case .macaronBerry:
             return Color(
@@ -70,7 +70,7 @@ enum CodexUsageWidgetPalette: String, CaseIterable, Identifiable {
         }
     }
 
-    var usageRingColor: Color {
+    var usageLineColor: Color {
         switch self {
         case .macaronBerry:
             return Color(
@@ -111,9 +111,6 @@ enum CodexUsageWidgetPalette: String, CaseIterable, Identifiable {
         }
     }
 
-    var tintColor: Color {
-        usageRingColor
-    }
 }
 
 struct CodexUsagePalettePicker: View {
@@ -128,9 +125,9 @@ struct CodexUsagePalettePicker: View {
 
             HStack(spacing: 4) {
                 Circle()
-                    .fill(controller.palette.timeRingColor)
+                    .fill(controller.palette.referenceLineColor)
                 Circle()
-                    .fill(controller.palette.usageRingColor)
+                    .fill(controller.palette.usageLineColor)
             }
             .frame(width: 24, height: 10)
             .accessibilityHidden(true)
@@ -198,16 +195,6 @@ struct CodexUsageDesktopWidgetView: View {
         rectangularCard
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(12)
-            .overlay(alignment: .topTrailing) {
-                if controller.isEditing {
-                    Button("Done") {
-                        controller.finishEditing()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    .padding(16)
-                }
-            }
             .overlay(alignment: .bottomTrailing) {
                 if controller.isResizeHandleHovered {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
@@ -220,7 +207,6 @@ struct CodexUsageDesktopWidgetView: View {
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(accessibilitySummary)
-            .tint(controller.palette.tintColor)
     }
 
     private var widgetBackgroundColor: Color {
@@ -245,6 +231,10 @@ struct CodexUsageDesktopWidgetView: View {
             green: 122.0 / 255.0,
             blue: 46.0 / 255.0
         )
+    }
+
+    private var summaryAccentColor: Color {
+        controller.palette.usageLineColor
     }
 
     private var rectangularCard: some View {
@@ -343,9 +333,7 @@ struct CodexUsageDesktopWidgetView: View {
         ) {
             HStack(spacing: 5) {
                 Circle()
-                    .fill(
-                        controller.palette.timeRingColor
-                    )
+                    .fill(Color.white.opacity(0.42))
                     .frame(width: 6, height: 6)
                 Text(label)
                     .font(.system(size: 9, weight: .bold, design: .rounded))
@@ -382,8 +370,8 @@ struct CodexUsageDesktopWidgetView: View {
                     .foregroundStyle(
                         LinearGradient(
                             colors: [
-                                controller.palette.usageRingColor.opacity(0.72),
-                                controller.palette.usageRingColor
+                                summaryAccentColor.opacity(0.72),
+                                summaryAccentColor
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -462,7 +450,7 @@ struct CodexUsageDesktopWidgetView: View {
             }
             context.stroke(
                 referencePath,
-                with: .color(controller.palette.timeRingColor.opacity(0.48)),
+                with: .color(controller.palette.referenceLineColor.opacity(0.48)),
                 style: StrokeStyle(
                     lineWidth: 1.5,
                     lineCap: .round,
@@ -508,11 +496,11 @@ struct CodexUsageDesktopWidgetView: View {
                 }
                 context.fill(
                     fillPath,
-                    with: .color(controller.palette.usageRingColor.opacity(0.12))
+                    with: .color(controller.palette.usageLineColor.opacity(0.12))
                 )
                 context.stroke(
                     usagePath,
-                    with: .color(controller.palette.usageRingColor),
+                    with: .color(controller.palette.usageLineColor),
                     style: StrokeStyle(
                         lineWidth: 3,
                         lineCap: .round,
@@ -530,7 +518,7 @@ struct CodexUsageDesktopWidgetView: View {
                 )
                 context.fill(
                     Path(ellipseIn: marker),
-                    with: .color(controller.palette.usageRingColor)
+                    with: .color(controller.palette.usageLineColor)
                 )
                 context.stroke(
                     Path(ellipseIn: marker),

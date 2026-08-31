@@ -222,6 +222,44 @@ final class CodexUsageWidgetPresentationTests: XCTestCase {
         XCTAssertEqual(points[3].timeProgress, 0.5, accuracy: 0.0001)
     }
 
+    func testPaceChartPointsStayMonotonicWithinAResetWindow() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let resetsAt = now.addingTimeInterval(3_600)
+        let samples = [
+            CodexUsagePaceSample(
+                capturedAt: now.addingTimeInterval(-10_800),
+                usedPercent: 12,
+                windowMinutes: 300,
+                resetsAt: resetsAt
+            ),
+            CodexUsagePaceSample(
+                capturedAt: now.addingTimeInterval(-7_200),
+                usedPercent: 10,
+                windowMinutes: 300,
+                resetsAt: resetsAt
+            ),
+            CodexUsagePaceSample(
+                capturedAt: now.addingTimeInterval(-3_600),
+                usedPercent: 19,
+                windowMinutes: 300,
+                resetsAt: resetsAt
+            ),
+        ]
+
+        let points = CodexUsageWidgetPresentation.paceChartPoints(
+            samples: samples,
+            usedPercent: 16,
+            windowMinutes: 300,
+            resetsAt: resetsAt,
+            now: now
+        )
+
+        XCTAssertEqual(
+            points.map(\.usageProgress),
+            [0, 0.12, 0.12, 0.19, 0.19]
+        )
+    }
+
     func testBuildsStepPointsWithoutInventingLinearUsageBetweenSamples() {
         let points = [
             CodexUsagePacePoint(timeProgress: 0.10, usageProgress: 0.08),
