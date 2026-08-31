@@ -18,7 +18,7 @@ A standalone macOS 13+ SwiftUI app extracted from Dots. It provides:
 The banner mockup uses the app icon compiled from the current Icon Composer
 source.
 
-![Codex Usage macOS reset notification mockup](docs/images/codex-usage-notification-mockup.png)
+<img src="docs/images/codex-usage-notification-mockup.png" alt="Codex Usage macOS reset notification mockup" width="640">
 
 ## Data sources and refresh
 
