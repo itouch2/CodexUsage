@@ -13,6 +13,8 @@ struct CodexUsageMenuBarLabel: View {
             )
             .renderingMode(.template)
 
+            Text("Codex")
+
             if let remainingPercent {
                 Text("\(remainingPercent)%")
                     .monospacedDigit()

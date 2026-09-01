@@ -3,6 +3,23 @@ import CodexUsageCore
 import SwiftUI
 import UserNotifications
 
+enum CodexUsageDockPreference {
+    static let defaultsKey = "showInDock"
+
+    @MainActor
+    static func applyCurrentPreference(
+        defaults: UserDefaults = .standard
+    ) {
+        defaults.register(defaults: [defaultsKey: true])
+        apply(isVisible: defaults.bool(forKey: defaultsKey))
+    }
+
+    @MainActor
+    static func apply(isVisible: Bool) {
+        NSApp.setActivationPolicy(isVisible ? .regular : .accessory)
+    }
+}
+
 @main
 struct CodexUsageApp: App {
     @NSApplicationDelegateAdaptor(CodexUsageAppDelegate.self)
@@ -65,6 +82,10 @@ final class CodexUsageAppDelegate: NSObject,
     NSApplicationDelegate,
     UNUserNotificationCenterDelegate
 {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        CodexUsageDockPreference.applyCurrentPreference()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
         if let iconURL = Bundle.main.url(
@@ -73,7 +94,6 @@ final class CodexUsageAppDelegate: NSObject,
         ), let icon = NSImage(contentsOf: iconURL) {
             NSApp.applicationIconImage = icon
         }
-        NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -158,6 +178,21 @@ private struct CodexUsageMenuBarView: View {
             }
 
             InfoCard(
+                title: "Reset alerts",
+                titleFont: .subheadline.weight(.semibold)
+            ) {
+                HStack(spacing: 10) {
+                    Label("Reset signal notifications", systemImage: "bell")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+
+                    Spacer(minLength: 8)
+
+                    ResetAlertsControl(viewModel: viewModel)
+                }
+            }
+
+            InfoCard(
                 title: "Desktop Widget",
                 titleFont: .subheadline.weight(.semibold)
             ) {
@@ -172,10 +207,6 @@ private struct CodexUsageMenuBarView: View {
                         widgetController.toggleEditing()
                     }
                     .disabled(!widgetController.isVisible)
-
-                    Button("Refresh") {
-                        widgetController.refresh()
-                    }
 
                     Spacer()
 
@@ -192,9 +223,6 @@ private struct CodexUsageMenuBarView: View {
             }
 
             HStack {
-                Button("Refresh") {
-                    viewModel.refresh()
-                }
                 Spacer()
                 Button("Quit") {
                     NSApp.terminate(nil)

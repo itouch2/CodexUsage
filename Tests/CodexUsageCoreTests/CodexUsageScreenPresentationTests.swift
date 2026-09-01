@@ -150,6 +150,39 @@ final class CodexUsageScreenPresentationTests: XCTestCase {
         XCTAssertFalse(source.contains("controller.finishEditing()"))
     }
 
+    func testDesktopWidgetHasTinyMoreButtonThatOpensDashboard() throws {
+        let widget = try appSource("CodexUsageDesktopWidgetView.swift")
+        let controller = try appSource(
+            "CodexUsageDesktopWidgetController.swift"
+        )
+        let dashboard = try appSource("AgentUsageView.swift")
+        let header = try sourceSection(
+            in: widget,
+            from: "private var widgetHeader: some View",
+            to: "private var moreButton"
+        )
+        let moreButton = try sourceSection(
+            in: widget,
+            from: "private var moreButton",
+            to: "@ViewBuilder"
+        )
+
+        XCTAssertTrue(header.contains("moreButton"))
+        XCTAssertTrue(moreButton.contains("controller.openDashboard()"))
+        XCTAssertTrue(moreButton.contains("Image(systemName: \"ellipsis\")"))
+        XCTAssertTrue(moreButton.contains(".frame(width: 20, height: 20)"))
+        XCTAssertTrue(moreButton.contains(
+            ".accessibilityLabel(\"Open Codex Usage\")"
+        ))
+        XCTAssertTrue(controller.contains("func openDashboard()"))
+        XCTAssertTrue(controller.contains("isInMoreButtonHotZone"))
+        XCTAssertTrue(controller.contains("dashboardOpenHandler?()"))
+        XCTAssertTrue(dashboard.contains("@Environment(\\.openWindow)"))
+        XCTAssertTrue(dashboard.contains(
+            "widgetController.setDashboardOpenHandler"
+        ))
+    }
+
     func testInspectorSwitchesShareTheCompactChubbyVioletStyle() throws {
         let source = try appSource("WidgetInspectorView.swift")
         let desktopVisibilityToggle = try sourceSection(
@@ -207,6 +240,57 @@ final class CodexUsageScreenPresentationTests: XCTestCase {
 
         XCTAssertTrue(source.contains(".windowStyle(.hiddenTitleBar)"))
         XCTAssertFalse(source.contains(".windowStyle(.titleBar)"))
+    }
+
+    func testMenuBarOmitsManualRefreshAndKeepsResetStatus() throws {
+        let source = try appSource("CodexUsageApp.swift")
+        let start = try XCTUnwrap(
+            source.range(of: "private struct CodexUsageMenuBarView")?.lowerBound
+        )
+        let menuBar = source[start...]
+
+        XCTAssertFalse(menuBar.contains("Button(\"Refresh\")"))
+        XCTAssertTrue(menuBar.contains(
+            "CodexResetRadarPresentation.widgetBadge"
+        ))
+        XCTAssertTrue(menuBar.contains("viewModel.resetRadar"))
+        XCTAssertTrue(menuBar.contains("viewModel.refresh()"))
+    }
+
+    func testMenuBarLabelNamesCodexWhenDockIsHidden() throws {
+        let source = try appSource("CodexUsageMenuBarLabel.swift")
+
+        XCTAssertTrue(source.contains("Text(\"Codex\")"))
+        XCTAssertTrue(source.contains(
+            "Text(\"\\(remainingPercent)%\")"
+        ))
+        XCTAssertTrue(source.contains("accessibilityLabel"))
+    }
+
+    func testInspectorCanHideAppFromDockAndRestoreItOnLaunch() throws {
+        let app = try appSource("CodexUsageApp.swift")
+        let inspector = try appSource("WidgetInspectorView.swift")
+        let dockVisibility = try sourceSection(
+            in: inspector,
+            from: "Toggle(\"Show in Dock\"",
+            to: "private var dockVisibility"
+        )
+
+        XCTAssertTrue(dockVisibility.contains(
+            ".toggleStyle(CompactChubbyToggleStyle())"
+        ))
+        XCTAssertTrue(inspector.contains(
+            "@AppStorage(CodexUsageDockPreference.defaultsKey)"
+        ))
+        XCTAssertTrue(inspector.contains(
+            "CodexUsageDockPreference.apply(isVisible: isVisible)"
+        ))
+        XCTAssertTrue(app.contains("applicationWillFinishLaunching"))
+        XCTAssertTrue(app.contains(
+            "CodexUsageDockPreference.applyCurrentPreference()"
+        ))
+        XCTAssertTrue(app.contains("isVisible ? .regular : .accessory"))
+        XCTAssertTrue(app.contains("defaults.register(defaults: ["))
     }
 
     func testWindowUsesOneTitleAndInspectorOmitsLiveStatusCopy() throws {

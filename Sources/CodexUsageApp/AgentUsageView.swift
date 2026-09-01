@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AgentUsageView: View {
+    @Environment(\.openWindow) private var openWindow
     @ObservedObject var viewModel: AgentUsageViewModel
     @ObservedObject private var widgetController =
         CodexUsageDesktopWidgetController.shared
@@ -23,6 +24,11 @@ struct AgentUsageView: View {
                 locationRecorder: locationRecorder
             )
             .frame(width: 310)
+        }
+        .onAppear {
+            widgetController.setDashboardOpenHandler {
+                openWindow(id: "dashboard")
+            }
         }
     }
 }

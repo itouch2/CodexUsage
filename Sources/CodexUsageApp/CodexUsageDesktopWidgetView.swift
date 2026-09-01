@@ -277,7 +277,24 @@ struct CodexUsageDesktopWidgetView: View {
             Spacer()
 
             resetRadarBadge
+
+            moreButton
         }
+    }
+
+    private var moreButton: some View {
+        Button {
+            controller.openDashboard()
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.5))
+                .frame(width: 20, height: 20)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open Codex Usage")
+        .help("Open Codex Usage")
     }
 
     @ViewBuilder

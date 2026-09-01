@@ -53,6 +53,30 @@ final class CodexResetNotificationContractTests: XCTestCase {
         ))
     }
 
+    func testMenuBarShowsTheSharedResetAlertsControl() throws {
+        let menu = try sourceText(
+            at: "Sources/CodexUsageApp/CodexUsageApp.swift"
+        )
+        let inspector = try sourceText(
+            at: "Sources/CodexUsageApp/WidgetInspectorView.swift"
+        )
+
+        XCTAssertTrue(menu.contains("title: \"Reset alerts\""))
+        XCTAssertTrue(menu.contains(
+            "Label(\"Reset signal notifications\", systemImage: \"bell\")"
+        ))
+        XCTAssertTrue(menu.contains(
+            "ResetAlertsControl(viewModel: viewModel)"
+        ))
+        XCTAssertTrue(inspector.contains("struct ResetAlertsControl: View"))
+        XCTAssertEqual(
+            inspector.components(separatedBy:
+                "ResetAlertsControl(viewModel: viewModel)"
+            ).count - 1,
+            1
+        )
+    }
+
     func testForegroundNotificationsRequestBannerAndSound() throws {
         let source = try sourceText(
             at: "Sources/CodexUsageApp/CodexUsageApp.swift"

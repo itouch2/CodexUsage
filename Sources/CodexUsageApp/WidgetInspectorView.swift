@@ -48,6 +48,10 @@ struct WidgetInspectorView: View {
                 Divider()
 
                 WorkTrailSettingsRow(recorder: locationRecorder)
+
+                Divider()
+
+                DockVisibilitySettingsRow()
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -81,6 +85,33 @@ struct WidgetInspectorView: View {
         )
     }
 
+}
+
+private struct DockVisibilitySettingsRow: View {
+    @AppStorage(CodexUsageDockPreference.defaultsKey)
+    private var isVisibleInDock = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle("Show in Dock", isOn: dockVisibility)
+                .font(.title3.weight(.semibold))
+                .toggleStyle(CompactChubbyToggleStyle())
+
+            Text("Available from the menu bar when hidden.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var dockVisibility: Binding<Bool> {
+        Binding(
+            get: { isVisibleInDock },
+            set: { isVisible in
+                isVisibleInDock = isVisible
+                CodexUsageDockPreference.apply(isVisible: isVisible)
+            }
+        )
+    }
 }
 
 private struct CompactChubbyToggleStyle: ToggleStyle {
@@ -168,7 +199,7 @@ private struct ResetAlertsSettingsRow: View {
 
                 Spacer()
 
-                control
+                ResetAlertsControl(viewModel: viewModel)
             }
 
             resetInformation
@@ -315,8 +346,12 @@ private struct ResetAlertsSettingsRow: View {
         }
     }
 
-    @ViewBuilder
-    private var control: some View {
+}
+
+struct ResetAlertsControl: View {
+    @ObservedObject var viewModel: AgentUsageViewModel
+
+    var body: some View {
         switch viewModel.resetNotificationAuthorization {
         case .checking:
             ProgressView()

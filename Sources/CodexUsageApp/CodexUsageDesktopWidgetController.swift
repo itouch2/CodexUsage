@@ -15,6 +15,7 @@ private final class CodexUsageDesktopPanel: NSPanel {
     var minimumResizeSize = NSSize(width: 300, height: 180)
     private let clickMovementThreshold: CGFloat = 6
     private let resizeHotZoneSize: CGFloat = 28
+    private let moreButtonHotZoneSize = NSSize(width: 36, height: 46)
     private let resetSignalBadgeHotZoneSize = NSSize(width: 220, height: 46)
     private let surfaceInset: CGFloat = 20
     private var isResizeHandleHovered = false
@@ -43,6 +44,11 @@ private final class CodexUsageDesktopPanel: NSPanel {
             return
         }
         if event.type == .leftMouseDown,
+           isInMoreButtonHotZone(event) {
+            super.sendEvent(event)
+            return
+        }
+        if event.type == .leftMouseDown,
            isInResetSignalBadgeHotZone(event) {
             super.sendEvent(event)
             return
@@ -57,6 +63,8 @@ private final class CodexUsageDesktopPanel: NSPanel {
     override func mouseDown(with event: NSEvent) {
         if isInBottomRightResizeHotZone(event) {
             trackResize(from: event)
+        } else if isInMoreButtonHotZone(event) {
+            super.mouseDown(with: event)
         } else if isInResetSignalBadgeHotZone(event) {
             super.mouseDown(with: event)
         } else if isEditingProvider() {
@@ -163,7 +171,10 @@ private final class CodexUsageDesktopPanel: NSPanel {
         }
         let bounds = contentView.bounds
         let hotZone = NSRect(
-            x: bounds.maxX - surfaceInset - resetSignalBadgeHotZoneSize.width,
+            x: bounds.maxX
+                - surfaceInset
+                - moreButtonHotZoneSize.width
+                - resetSignalBadgeHotZoneSize.width,
             y: bounds.maxY - surfaceInset - resetSignalBadgeHotZoneSize.height,
             width: resetSignalBadgeHotZoneSize.width,
             height: resetSignalBadgeHotZoneSize.height
@@ -171,15 +182,30 @@ private final class CodexUsageDesktopPanel: NSPanel {
         return hotZone.contains(event.locationInWindow)
     }
 
+    private func isInMoreButtonHotZone(_ event: NSEvent) -> Bool {
+        guard let contentView else { return false }
+        let bounds = contentView.bounds
+        let hotZone = NSRect(
+            x: bounds.maxX - surfaceInset - moreButtonHotZoneSize.width,
+            y: bounds.maxY - surfaceInset - moreButtonHotZoneSize.height,
+            width: moreButtonHotZoneSize.width,
+            height: moreButtonHotZoneSize.height
+        )
+        return hotZone.contains(event.locationInWindow)
+    }
+
     private func updateHover(for event: NSEvent) {
         let isResizeHovered = isInBottomRightResizeHotZone(event)
+        let isMoreButtonHovered = !isResizeHovered
+            && isInMoreButtonHotZone(event)
         let isResetSignalHovered = !isResizeHovered
+            && !isMoreButtonHovered
             && isInResetSignalBadgeHotZone(event)
         setResizeHandleHovered(isResizeHovered)
         setResetSignalBadgeHovered(isResetSignalHovered)
         if isResizeHovered {
             diagonalResizeCursor.set()
-        } else if isResetSignalHovered {
+        } else if isMoreButtonHovered || isResetSignalHovered {
             NSCursor.pointingHand.set()
         } else {
             NSCursor.arrow.set()
@@ -283,6 +309,7 @@ final class CodexUsageDesktopWidgetController: NSObject, ObservableObject, NSWin
     private var window: NSPanel?
     private weak var viewModel: AgentUsageViewModel?
     private var snapshotObserver: AnyCancellable?
+    private var dashboardOpenHandler: (() -> Void)?
     private let defaults: UserDefaults
     private let originKey = "codexUsage.widget.origin"
     private let frameKey = "codexUsage.widget.frame"
@@ -411,6 +438,15 @@ final class CodexUsageDesktopWidgetController: NSObject, ObservableObject, NSWin
 
     func refresh() {
         viewModel?.refresh()
+    }
+
+    func setDashboardOpenHandler(_ handler: @escaping () -> Void) {
+        dashboardOpenHandler = handler
+    }
+
+    func openDashboard() {
+        dashboardOpenHandler?()
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func selectPalette(_ palette: CodexUsageWidgetPalette) {
