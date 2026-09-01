@@ -355,14 +355,42 @@ public enum CodexResetRadarPresentation {
         snapshot: CodexResetRadarSnapshot?,
         lastNotifiedSignalID: String?
     ) -> CodexResetNotificationPlan? {
-        guard let watch = snapshot?.activeWatch else { return nil }
-        let signalID = watch.source.url.absoluteString
-        guard signalID != lastNotifiedSignalID else { return nil }
+        notificationPlan(
+            snapshot: snapshot,
+            lastNotifiedWatchSignalID: lastNotifiedSignalID,
+            lastNotifiedResetSignalID: lastNotifiedSignalID
+        )
+    }
+
+    public static func notificationPlan(
+        snapshot: CodexResetRadarSnapshot?,
+        lastNotifiedWatchSignalID: String?,
+        lastNotifiedResetSignalID: String?
+    ) -> CodexResetNotificationPlan? {
+        guard let snapshot else { return nil }
+        if let watch = snapshot.activeWatch {
+            let signalID = watch.source.url.absoluteString
+            guard signalID != lastNotifiedWatchSignalID else { return nil }
+            return CodexResetNotificationPlan(
+                signalID: signalID,
+                title: "Codex reset watch",
+                body: watchHeadline(watch)
+                    ?? "A new reset signal was detected.",
+                sourceURL: watch.source.url
+            )
+        }
+
+        guard let reset = snapshot.latestReset else { return nil }
+        let signalID = reset.source.url.absoluteString
+        guard signalID != lastNotifiedResetSignalID else { return nil }
+        let announcement = displayText(reset.text)
         return CodexResetNotificationPlan(
             signalID: signalID,
-            title: "Codex reset watch",
-            body: watchHeadline(watch) ?? "A new reset signal was detected.",
-            sourceURL: watch.source.url
+            title: "Codex reset confirmed",
+            body: announcement.isEmpty
+                ? "A new Codex usage reset was confirmed."
+                : announcement,
+            sourceURL: reset.source.url
         )
     }
 

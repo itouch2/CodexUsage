@@ -151,7 +151,7 @@ final class CodexLocationRecordingContractTests: XCTestCase {
         XCTAssertTrue(packageScript.contains(#"--entitlements "$ENTITLEMENTS""#))
         XCTAssertTrue(packageScript.contains("--options runtime"))
         XCTAssertTrue(packageScript.contains("TIMESTAMP_ARGS=(--timestamp)"))
-        XCTAssertTrue(packageScript.contains("swift build --product"))
+        XCTAssertTrue(packageScript.contains(#"--product "$EXECUTABLE_NAME""#))
         XCTAssertTrue(packageScript.contains("codesign --verify --deep --strict"))
     }
 

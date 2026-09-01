@@ -80,3 +80,17 @@ opens the app before streaming its unified logs.
 The bundle is generated at `dist/Codex Usage.app` with bundle identifier
 `app.codexusage.local`. Packaging prefers an available Developer ID Application
 identity, then Apple Development, and otherwise falls back to ad-hoc signing.
+
+## Create a notarized release
+
+With a Developer ID Application certificate and a `notarytool` keychain profile
+named `AC_PASSWORD`, build a Universal app for Apple silicon and Intel Macs,
+notarize it with Apple, and create DMG and ZIP downloads:
+
+```sh
+scripts/package_release.sh
+```
+
+Release artifacts and their SHA-256 checksums are written to `dist/release/`.
+Override `VERSION`, `BUILD_NUMBER`, or `NOTARY_PROFILE` in the environment when
+publishing a different build.

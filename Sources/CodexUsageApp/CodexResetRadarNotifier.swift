@@ -25,8 +25,10 @@ enum CodexResetNotificationAuthorizationState: Equatable {
 final class CodexResetRadarNotifier {
     private let center: UNUserNotificationCenter?
     private let defaults: UserDefaults
-    private let lastNotifiedSignalIDKey =
+    private let lastNotifiedWatchSignalIDKey =
         "codexUsage.resetRadar.lastNotifiedSignalID"
+    private let lastNotifiedResetSignalIDKey =
+        "codexUsage.resetRadar.lastNotifiedResetSignalID"
     private var pendingSignalIDs: Set<String> = []
 
     init(
@@ -71,10 +73,16 @@ final class CodexResetRadarNotifier {
         guard let center else { return .unavailable }
         let authorization = await notificationSettings()
         guard authorization.allowsDelivery else { return authorization }
-        let lastSignalID = defaults.string(forKey: lastNotifiedSignalIDKey)
+        let lastWatchSignalID = defaults.string(
+            forKey: lastNotifiedWatchSignalIDKey
+        )
+        let lastResetSignalID = defaults.string(
+            forKey: lastNotifiedResetSignalIDKey
+        )
         guard let plan = CodexResetRadarPresentation.notificationPlan(
             snapshot: snapshot,
-            lastNotifiedSignalID: lastSignalID
+            lastNotifiedWatchSignalID: lastWatchSignalID,
+            lastNotifiedResetSignalID: lastResetSignalID
         ) else {
             return authorization
         }
@@ -98,7 +106,13 @@ final class CodexResetRadarNotifier {
                 trigger: nil
             )
             try await center.add(request)
-            defaults.set(plan.signalID, forKey: lastNotifiedSignalIDKey)
+            if let signalID = snapshot?.activeWatch?.source.url.absoluteString {
+                defaults.set(signalID, forKey: lastNotifiedWatchSignalIDKey)
+            }
+            if let snapshot,
+               let signalID = snapshot.latestReset?.source.url.absoluteString {
+                defaults.set(signalID, forKey: lastNotifiedResetSignalIDKey)
+            }
             return authorization
         } catch {
             return .failed(error.localizedDescription)

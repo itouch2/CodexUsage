@@ -16,6 +16,21 @@ final class CodexResetNotificationContractTests: XCTestCase {
         ))
     }
 
+    func testNotifierTracksWatchAndConfirmedResetSignalsSeparately() throws {
+        let source = try sourceText(
+            at: "Sources/CodexUsageApp/CodexResetRadarNotifier.swift"
+        )
+
+        XCTAssertTrue(source.contains(
+            "codexUsage.resetRadar.lastNotifiedResetSignalID"
+        ))
+        XCTAssertTrue(source.contains("lastNotifiedWatchSignalID:"))
+        XCTAssertTrue(source.contains("lastNotifiedResetSignalID:"))
+        XCTAssertTrue(source.contains(
+            "snapshot.latestReset?.source.url.absoluteString"
+        ))
+    }
+
     func testResetRadarProvidesExplicitNotificationControls() throws {
         let viewModel = try sourceText(
             at: "Sources/CodexUsageApp/AgentUsageViewModel.swift"

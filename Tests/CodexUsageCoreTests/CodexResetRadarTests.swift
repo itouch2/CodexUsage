@@ -154,13 +154,28 @@ final class CodexResetRadarTests: XCTestCase {
         )
     }
 
-    func testDoesNotNotifyWhenThereIsNoActiveWatch() throws {
+    func testPlansOneNotificationForANewConfirmedResetWithoutAWatch() throws {
         let snapshot = try fixtureSnapshot(withActiveWatch: false)
 
+        let plan = CodexResetRadarPresentation.notificationPlan(
+            snapshot: snapshot,
+            lastNotifiedSignalID: nil
+        )
+
+        XCTAssertEqual(
+            plan?.signalID,
+            "https://x.com/thsottiaux/status/1"
+        )
+        XCTAssertEqual(plan?.title, "Codex reset confirmed")
+        XCTAssertEqual(plan?.body, "Usage limits have been reset.")
+        XCTAssertEqual(
+            plan?.sourceURL.absoluteString,
+            "https://x.com/thsottiaux/status/1"
+        )
         XCTAssertNil(
             CodexResetRadarPresentation.notificationPlan(
                 snapshot: snapshot,
-                lastNotifiedSignalID: nil
+                lastNotifiedSignalID: plan?.signalID
             )
         )
     }

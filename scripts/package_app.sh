@@ -6,8 +6,10 @@ APP_NAME="${APP_NAME:-Codex Usage}"
 EXECUTABLE_NAME="CodexUsage"
 BUNDLE_ID="${BUNDLE_ID:-app.codexusage.local}"
 VERSION="${VERSION:-0.1.0}"
-BUILD_NUMBER="${BUILD_NUMBER:-1}"
+BUILD_NUMBER="${BUILD_NUMBER:-2}"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-auto}"
+BUILD_CONFIGURATION="${BUILD_CONFIGURATION:-debug}"
+EXECUTABLE_PATH="${EXECUTABLE_PATH:-}"
 APP_DIR="$ROOT_DIR/dist/$APP_NAME.app"
 ENTITLEMENTS="$ROOT_DIR/Packaging/CodexUsage.entitlements"
 BUILD_WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/codex-usage-build.XXXXXX")"
@@ -20,11 +22,20 @@ cleanup() {
 trap cleanup EXIT
 
 cd "$ROOT_DIR"
-swift build --product "$EXECUTABLE_NAME"
-BIN_DIR="$(swift build --show-bin-path)"
+if [[ -n "$EXECUTABLE_PATH" ]]; then
+  if [[ ! -f "$EXECUTABLE_PATH" ]]; then
+    echo "error: executable not found: $EXECUTABLE_PATH" >&2
+    exit 2
+  fi
+  BUILT_EXECUTABLE="$EXECUTABLE_PATH"
+else
+  swift build --configuration "$BUILD_CONFIGURATION" --product "$EXECUTABLE_NAME"
+  BIN_DIR="$(swift build --configuration "$BUILD_CONFIGURATION" --show-bin-path)"
+  BUILT_EXECUTABLE="$BIN_DIR/$EXECUTABLE_NAME"
+fi
 
 mkdir -p "$STAGED_APP/Contents/MacOS" "$STAGED_APP/Contents/Resources"
-/bin/cp "$BIN_DIR/$EXECUTABLE_NAME" \
+/bin/cp "$BUILT_EXECUTABLE" \
   "$STAGED_APP/Contents/MacOS/$EXECUTABLE_NAME"
 "$ROOT_DIR/scripts/compile_app_icon.sh" \
   "$STAGED_APP/Contents/Resources" \
