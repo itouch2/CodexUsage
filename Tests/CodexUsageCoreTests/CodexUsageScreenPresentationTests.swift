@@ -257,13 +257,14 @@ final class CodexUsageScreenPresentationTests: XCTestCase {
         XCTAssertTrue(menuBar.contains("viewModel.refresh()"))
     }
 
-    func testMenuBarLabelNamesCodexWhenDockIsHidden() throws {
+    func testMenuBarLabelUsesTheRemainingQuotaNumber() throws {
         let source = try appSource("CodexUsageMenuBarLabel.swift")
 
-        XCTAssertTrue(source.contains("Text(\"Codex\")"))
+        XCTAssertFalse(source.contains("Text(\"Codex\")"))
         XCTAssertTrue(source.contains(
             "Text(\"\\(remainingPercent)%\")"
         ))
+        XCTAssertTrue(source.contains("Text(\"--%\")"))
         XCTAssertTrue(source.contains("accessibilityLabel"))
     }
 
