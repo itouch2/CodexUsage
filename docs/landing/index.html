@@ -97,20 +97,29 @@
   .feature-media img { position: absolute; display: block; max-width: none; height: auto; }
   .feature-media-chart { width: 84%; aspect-ratio: 1.335; }
   .feature-media-chart img { width: 346%; left: -31%; top: -112%; }
-  .feature-media-menu {
-    width: 84%; aspect-ratio: 1.335; padding: 26px 20px 22px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
-    background:
-      radial-gradient(280px 130px at 50% 22%, rgba(139, 124, 240, 0.23), transparent 72%),
-      #141419;
+  .feature-media-reset { width: 84%; aspect-ratio: 1.335; background: #141419; }
+  .reset-notification-shot {
+    inset: 0; width: 100%; height: 100% !important;
+    object-fit: cover; object-position: center;
   }
-  .feature-media-menu img {
-    position: static; width: 260px; max-width: 100%; height: auto;
-    border-radius: 8px; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.36);
+  .feature-media-reset::after {
+    content: ""; position: absolute; inset: 42% 0 0; z-index: 1;
+    background: linear-gradient(to bottom, transparent, rgba(9, 9, 14, 0.72));
+    pointer-events: none;
   }
-  .menu-shot-caption { display: grid; gap: 5px; text-align: center; }
-  .menu-shot-caption strong { color: var(--text); font-size: 14px; font-weight: 650; }
-  .menu-shot-caption span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+  .reset-menu-layer {
+    position: absolute; z-index: 2; left: 14px; right: 14px; bottom: 13px;
+    display: grid; gap: 6px;
+  }
+  .reset-menu-layer span {
+    color: rgba(255, 255, 255, 0.82); font-size: 9px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .reset-menu-layer img {
+    position: static; width: 100%; max-width: 100%; height: auto;
+    border-radius: 7px; border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.42);
+  }
   .also { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 22px; color: var(--muted); font-size: 14px; }
   .also strong { color: var(--text); font-weight: 600; }
 
@@ -220,11 +229,11 @@
         </div>
         <h3>Know when tokens reset.</h3>
         <p>Reset Radar watches community signals and alerts you before each reset, so you know when fresh quota lands and can plan heavier runs.</p>
-        <figure class="feature-media feature-media-menu">
-          <img src="../images/codex-usage-menu-reset-indicator.png" alt="Codex Usage menu bar reset indicator shown as a green dot beside the remaining quota" width="260" height="66" loading="lazy" decoding="async">
-          <figcaption class="menu-shot-caption">
-            <strong>Reset confirmed.</strong>
-            <span>The dot clears when you open the menu, then returns for a new signal.</span>
+        <figure class="feature-media feature-media-reset">
+          <img class="reset-notification-shot" src="../images/codex-usage-reset-alert-ready.png" alt="Codex Usage reset alerts are ready notification" width="848" height="538" loading="lazy" decoding="async">
+          <figcaption class="reset-menu-layer">
+            <span>Unread in the menu bar</span>
+            <img src="../images/codex-usage-menu-reset-indicator.png" alt="Codex Usage menu bar reset indicator shown as a green dot beside the remaining quota" width="260" height="66" loading="lazy" decoding="async">
           </figcaption>
         </figure>
       </div>
