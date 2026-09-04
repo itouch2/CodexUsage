@@ -548,6 +548,12 @@ final class CodexUsageScreenPresentationTests: XCTestCase {
             "left: auto; right: 14px; bottom: 13px; width: 60%;"
         ))
         XCTAssertTrue(landing.contains(
+            "transform: scale(1.12); transform-origin: 50% 10%;"
+        ))
+        XCTAssertFalse(landing.contains(
+            "box-shadow: 0 12px 28px"
+        ))
+        XCTAssertTrue(landing.contains(
             "Codex Usage menu bar reset indicator"
         ))
         XCTAssertTrue(landing.contains("Codex-Usage-0.1.0-5.dmg"))
