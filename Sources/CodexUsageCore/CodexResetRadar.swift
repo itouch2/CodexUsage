@@ -424,4 +424,38 @@ public enum CodexResetRadarPresentation {
         guard let reset = snapshot.latestReset else { return nil }
         return "RESET " + relativeAge(since: reset.announcedAt, now: now)
     }
+
+    public static func menuBarBadge(
+        snapshot: CodexResetRadarSnapshot?,
+        now: Date = Date(),
+        acknowledgedSignalID: String? = nil
+    ) -> String? {
+        guard let snapshot,
+              let signalID = menuBarSignalID(snapshot: snapshot, now: now),
+              signalID != acknowledgedSignalID
+        else {
+            return nil
+        }
+        if snapshot.activeWatch != nil {
+            return "WATCH"
+        }
+        return "RESET"
+    }
+
+    public static func menuBarSignalID(
+        snapshot: CodexResetRadarSnapshot?,
+        now: Date = Date()
+    ) -> String? {
+        guard let snapshot else { return nil }
+        if let watch = snapshot.activeWatch {
+            return watch.source.url.absoluteString
+        }
+        guard let reset = snapshot.latestReset,
+              now.timeIntervalSince(reset.announcedAt) >= 0,
+              now.timeIntervalSince(reset.announcedAt) < 24 * 60 * 60
+        else {
+            return nil
+        }
+        return reset.source.url.absoluteString
+    }
 }

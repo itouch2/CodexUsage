@@ -97,11 +97,20 @@
   .feature-media img { position: absolute; display: block; max-width: none; height: auto; }
   .feature-media-chart { width: 84%; aspect-ratio: 1.335; }
   .feature-media-chart img { width: 346%; left: -31%; top: -112%; }
-  .feature-media-notification { width: 84%; aspect-ratio: 1.335; }
-  .feature-media-notification img {
-    inset: 0; width: 100%; height: 100%;
-    object-fit: cover; object-position: right center;
+  .feature-media-menu {
+    width: 84%; aspect-ratio: 1.335; padding: 26px 20px 22px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    background:
+      radial-gradient(280px 130px at 50% 22%, rgba(139, 124, 240, 0.23), transparent 72%),
+      #141419;
   }
+  .feature-media-menu img {
+    position: static; width: 260px; max-width: 100%; height: auto;
+    border-radius: 8px; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.36);
+  }
+  .menu-shot-caption { display: grid; gap: 5px; text-align: center; }
+  .menu-shot-caption strong { color: var(--text); font-size: 14px; font-weight: 650; }
+  .menu-shot-caption span { color: var(--muted); font-size: 12px; line-height: 1.45; }
   .also { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 22px; color: var(--muted); font-size: 14px; }
   .also strong { color: var(--text); font-weight: 600; }
 
@@ -174,7 +183,7 @@
   <h1>Stay on pace with Codex.</h1>
   <p><strong class="hero-emphasis">See how token usage tracks toward the expected reset time</strong>, and <strong class="hero-emphasis">get timely alerts when a reset looks likely</strong>—so you can plan ahead and stay in control.</p>
   <div class="hero-ctas">
-    <a class="btn btn-primary" href="../downloads/Codex-Usage-0.1.0-4.dmg" download="Codex-Usage-0.1.0-4.dmg">Download for Mac</a>
+    <a class="btn btn-primary" href="../downloads/Codex-Usage-0.1.0-5.dmg" download="Codex-Usage-0.1.0-5.dmg">Download for Mac</a>
   </div>
   <div class="hero-shot">
     <img src="../images/codex-usage-dashboard.png" alt="Codex Usage macOS dashboard showing the desktop widget preview, appearance palettes, reset alerts, and Work Trail settings" width="1720" height="1184" decoding="async">
@@ -211,8 +220,12 @@
         </div>
         <h3>Know when tokens reset.</h3>
         <p>Reset Radar watches community signals and alerts you before each reset, so you know when fresh quota lands and can plan heavier runs.</p>
-        <figure class="feature-media feature-media-notification">
-          <img src="../images/codex-usage-reset-alert-ready.png" alt="Codex Usage reset alerts are ready notification" width="848" height="538" loading="lazy" decoding="async">
+        <figure class="feature-media feature-media-menu">
+          <img src="../images/codex-usage-menu-reset-indicator.png" alt="Codex Usage menu bar reset indicator shown as a green dot beside the remaining quota" width="260" height="66" loading="lazy" decoding="async">
+          <figcaption class="menu-shot-caption">
+            <strong>Reset confirmed.</strong>
+            <span>The dot clears when you open the menu, then returns for a new signal.</span>
+          </figcaption>
         </figure>
       </div>
     </div>

@@ -146,7 +146,7 @@ struct CodexUsagePalettePicker: View {
             .labelsHidden()
             .pickerStyle(.menu)
             .controlSize(.small)
-            .frame(width: 138)
+            .frame(width: 138, alignment: .trailing)
         }
     }
 }
@@ -304,36 +304,36 @@ struct CodexUsageDesktopWidgetView: View {
                 controller.openResetSource(watch.source.url)
             } label: {
                 HStack(spacing: 6) {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "bell.fill")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.58))
-
-                        Circle()
-                            .fill(resetSignalColor)
-                            .frame(width: 4, height: 4)
-                            .offset(x: 2, y: -1)
-                    }
+                    Image(systemName: "bell.badge.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(resetSignalColor)
 
                     Text(resetWatchBadgeLabel(watch))
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.72))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color.white.opacity(0.94))
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
 
                     Text("Tibo")
                         .font(.system(size: 10, weight: .regular))
-                        .foregroundStyle(Color.white.opacity(0.4))
+                        .foregroundStyle(Color.white.opacity(0.64))
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
                 .background {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    Capsule()
                         .fill(
                             controller.isResetSignalBadgeHovered
-                                ? Color.white.opacity(0.06)
-                                : Color.clear
+                                ? resetSignalColor.opacity(0.26)
+                                : resetSignalColor.opacity(0.18)
                         )
+                        .overlay {
+                            Capsule()
+                                .stroke(
+                                    resetSignalColor.opacity(0.72),
+                                    lineWidth: 1
+                                )
+                        }
                 }
                 .contentShape(Rectangle())
             }
@@ -348,15 +348,27 @@ struct CodexUsageDesktopWidgetView: View {
             snapshot: viewModel.resetRadar,
             now: viewModel.snapshot.generatedAt
         ) {
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(Color.white.opacity(0.42))
-                    .frame(width: 6, height: 6)
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Color.green)
                 Text(label)
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
-                    .tracking(0.7)
-                    .foregroundStyle(Color.white.opacity(0.58))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .tracking(0.5)
+                    .foregroundStyle(Color.white.opacity(0.94))
             }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background {
+                Capsule()
+                    .fill(Color.green.opacity(0.18))
+                    .overlay {
+                        Capsule()
+                            .stroke(Color.green.opacity(0.72), lineWidth: 1)
+                    }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(label)
         }
     }
 

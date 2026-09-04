@@ -21,7 +21,7 @@
       ]
     },
     {
-      "source": "/downloads/Codex-Usage-0.1.0-4.dmg",
+      "source": "/downloads/Codex-Usage-0.1.0-5.dmg",
       "headers": [
         {
           "key": "Content-Type",
@@ -29,7 +29,7 @@
         },
         {
           "key": "Content-Disposition",
-          "value": "attachment; filename=\"Codex-Usage-0.1.0-4.dmg\""
+          "value": "attachment; filename=\"Codex-Usage-0.1.0-5.dmg\""
         }
       ]
     }

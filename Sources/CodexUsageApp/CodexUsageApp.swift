@@ -20,15 +20,32 @@ enum CodexUsageDockPreference {
     }
 }
 
+enum CodexResetMenuBarAcknowledgement {
+    static let defaultsKey =
+        "codex.resetRadar.acknowledgedMenuBarSignalID"
+}
+
 @main
 struct CodexUsageApp: App {
     @NSApplicationDelegateAdaptor(CodexUsageAppDelegate.self)
     private var appDelegate
     @StateObject private var viewModel = AgentUsageViewModel()
     @StateObject private var locationRecorder = CodexLocationRecorder.shared
+    @AppStorage(CodexResetMenuBarAcknowledgement.defaultsKey)
+    private var acknowledgedResetSignalID = ""
     @State private var didStartRuntime = false
 
     var body: some Scene {
+        let menuBarSignalID = CodexResetRadarPresentation.menuBarSignalID(
+            snapshot: viewModel.resetRadar,
+            now: viewModel.snapshot.generatedAt
+        )
+        let menuBarBadge = CodexResetRadarPresentation.menuBarBadge(
+            snapshot: viewModel.resetRadar,
+            now: viewModel.snapshot.generatedAt,
+            acknowledgedSignalID: acknowledgedResetSignalID
+        )
+
         WindowGroup("Codex Usage", id: "dashboard") {
             AgentUsageView(viewModel: viewModel)
                 .frame(
@@ -70,8 +87,12 @@ struct CodexUsageApp: App {
                 .frame(width: 340)
         } label: {
             CodexUsageMenuBarLabel(
-                remainingPercent: viewModel.codexRemainingPercent
-            )
+                remainingPercent: viewModel.codexRemainingPercent,
+                resetBadge: menuBarBadge
+            ) {
+                guard let menuBarSignalID else { return }
+                acknowledgedResetSignalID = menuBarSignalID
+            }
         }
         .menuBarExtraStyle(.window)
     }
@@ -133,6 +154,8 @@ private struct CodexUsageMenuBarView: View {
                 .buttonStyle(.borderless)
                 .help("Open Dashboard")
             }
+
+            resetSignalBanner
 
             InfoCard(
                 title: "Account",
@@ -232,6 +255,104 @@ private struct CodexUsageMenuBarView: View {
         .padding(16)
         .onAppear {
             viewModel.refresh()
+        }
+    }
+
+    @ViewBuilder
+    private var resetSignalBanner: some View {
+        if let watch = viewModel.resetRadar?.activeWatch {
+            ResetSignalBanner(
+                state: .watch,
+                detail: CodexResetRadarPresentation.watchHeadline(watch)
+                    ?? "A possible reset signal is active.",
+                sourceURL: watch.source.url
+            )
+        } else if let reset = viewModel.resetRadar?.latestReset,
+                  CodexResetRadarPresentation.menuBarBadge(
+                      snapshot: viewModel.resetRadar,
+                      now: viewModel.snapshot.generatedAt
+                  ) != nil {
+            ResetSignalBanner(
+                state: .confirmed,
+                detail: CodexResetRadarPresentation.relativeAge(
+                    since: reset.announcedAt
+                ),
+                sourceURL: reset.source.url
+            )
+        }
+    }
+}
+
+private struct ResetSignalBanner: View {
+    enum State {
+        case watch
+        case confirmed
+    }
+
+    let state: State
+    let detail: String
+    let sourceURL: URL
+
+    var body: some View {
+        Button {
+            NSWorkspace.shared.open(sourceURL)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: symbolName)
+                    .font(.system(size: 15, weight: .semibold))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    switch state {
+                    case .watch:
+                        Text("Reset watch")
+                            .font(.subheadline.weight(.bold))
+                    case .confirmed:
+                        Text("Reset confirmed")
+                            .font(.subheadline.weight(.bold))
+                    }
+
+                    Text(detail)
+                        .font(.caption.weight(.medium))
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "arrow.up.right")
+                    .font(.caption.weight(.semibold))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(backgroundColor)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                    }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Open reset source on X")
+    }
+
+    private var symbolName: String {
+        switch state {
+        case .watch:
+            return "bell.badge.fill"
+        case .confirmed:
+            return "checkmark.circle.fill"
+        }
+    }
+
+    private var backgroundColor: Color {
+        switch state {
+        case .watch:
+            return Color.orange
+        case .confirmed:
+            return Color.green
         }
     }
 }

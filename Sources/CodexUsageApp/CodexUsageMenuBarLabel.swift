@@ -3,6 +3,8 @@ import SwiftUI
 
 struct CodexUsageMenuBarLabel: View {
     let remainingPercent: Int?
+    let resetBadge: String?
+    let onStatusItemClick: () -> Void
 
     var body: some View {
         HStack(spacing: 4) {
@@ -20,17 +22,214 @@ struct CodexUsageMenuBarLabel: View {
                 Text("--%")
                     .monospacedDigit()
             }
+
+            if resetBadge != nil {
+                Color.clear
+                .frame(width: 6, height: 17)
+                .accessibilityHidden(true)
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .help(accessibilityLabel)
+        .background {
+            StatusItemBridge(
+                toolTip: accessibilityLabel,
+                resetBadge: resetBadge,
+                onStatusItemClick: onStatusItemClick
+            )
+                .frame(width: 0, height: 0)
+        }
     }
 
     private var accessibilityLabel: String {
-        guard let remainingPercent else {
-            return "Codex usage unavailable"
+        let usageDescription: String
+        if let remainingPercent {
+            usageDescription = "Codex usage, \(remainingPercent) percent remaining"
+        } else {
+            usageDescription = "Codex usage unavailable"
         }
-        return "Codex usage, \(remainingPercent) percent remaining"
+        guard let resetBadge else { return usageDescription }
+        return usageDescription + ", reset status " + resetBadge.lowercased()
+    }
+}
+
+private struct StatusItemBridge: NSViewRepresentable {
+    let toolTip: String
+    let resetBadge: String?
+    let onStatusItemClick: () -> Void
+
+    func makeNSView(context: Context) -> StatusItemBridgeView {
+        let view = StatusItemBridgeView()
+        view.statusItemToolTip = toolTip
+        view.resetBadge = resetBadge
+        view.onStatusItemClick = onStatusItemClick
+        view.applyConfigurationSoon()
+        return view
+    }
+
+    func updateNSView(
+        _ nsView: StatusItemBridgeView,
+        context: Context
+    ) {
+        nsView.statusItemToolTip = toolTip
+        nsView.resetBadge = resetBadge
+        nsView.onStatusItemClick = onStatusItemClick
+        nsView.applyConfigurationSoon()
+    }
+}
+
+private final class StatusItemBridgeView: NSView {
+    private static let indicatorIdentifier = NSUserInterfaceItemIdentifier(
+        "CodexUsageResetIndicator"
+    )
+    private static let indicatorDiameter: CGFloat = 6
+    private static let indicatorInset: CGFloat = 2
+
+    private weak var observedStatusBarButton: NSStatusBarButton?
+    private var clickMonitor: Any?
+    var statusItemToolTip = ""
+    var resetBadge: String?
+    var onStatusItemClick: () -> Void = {}
+
+    deinit {
+        if let clickMonitor {
+            NSEvent.removeMonitor(clickMonitor)
+        }
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        applyConfigurationSoon()
+    }
+
+    func applyConfigurationSoon() {
+        DispatchQueue.main.async { [weak self] in
+            self?.applyStatusItemConfiguration()
+        }
+    }
+
+    private func applyStatusItemConfiguration() {
+        for window in NSApp.windows {
+            if let statusBarButton = findStatusBarButton(in: window.contentView) {
+                let toolTip = statusItemToolTip
+                statusBarButton.toolTip = toolTip
+                installClickMonitorIfNeeded(on: statusBarButton)
+                updateResetIndicator(on: statusBarButton)
+                return
+            }
+        }
+    }
+
+    private func installClickMonitorIfNeeded(
+        on statusBarButton: NSStatusBarButton
+    ) {
+        observedStatusBarButton = statusBarButton
+        guard clickMonitor == nil else { return }
+
+        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) {
+            [weak self] event in
+            guard let self,
+                  let statusBarButton = self.observedStatusBarButton,
+                  event.window === statusBarButton.window
+            else {
+                return event
+            }
+            let location = statusBarButton.convert(
+                event.locationInWindow,
+                from: nil
+            )
+            guard statusBarButton.bounds.contains(location) else {
+                return event
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.onStatusItemClick()
+            }
+            return event
+        }
+    }
+
+    private func updateResetIndicator(on statusBarButton: NSStatusBarButton) {
+        let existingIndicator = statusBarButton.subviews.first {
+            $0.identifier == Self.indicatorIdentifier
+        } as? StatusItemResetIndicatorView
+
+        guard let resetBadge else {
+            existingIndicator?.removeFromSuperview()
+            return
+        }
+
+        let indicator = existingIndicator
+            ?? StatusItemResetIndicatorView(frame: .zero)
+        indicator.identifier = Self.indicatorIdentifier
+        indicator.indicatorColor = resetBadge == "WATCH"
+            ? .systemOrange
+            : .systemGreen
+        indicator.frame = NSRect(
+            x: statusBarButton.bounds.maxX
+                - Self.indicatorDiameter
+                - Self.indicatorInset,
+            y: statusBarButton.bounds.maxY
+                - Self.indicatorDiameter
+                - Self.indicatorInset,
+            width: Self.indicatorDiameter,
+            height: Self.indicatorDiameter
+        )
+        indicator.autoresizingMask = [.minXMargin, .minYMargin]
+
+        if indicator.superview == nil {
+            statusBarButton.addSubview(
+                indicator,
+                positioned: .above,
+                relativeTo: nil
+            )
+        }
+    }
+
+    private func findStatusBarButton(
+        in view: NSView?
+    ) -> NSStatusBarButton? {
+        guard let view else { return nil }
+        if let statusBarButton = view as? NSStatusBarButton {
+            return statusBarButton
+        }
+        for subview in view.subviews {
+            if let statusBarButton = findStatusBarButton(in: subview) {
+                return statusBarButton
+            }
+        }
+        return nil
+    }
+}
+
+private final class StatusItemResetIndicatorView: NSView {
+    var indicatorColor = NSColor.systemGreen {
+        didSet {
+            layer?.backgroundColor = indicatorColor.cgColor
+        }
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        configureLayer()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configureLayer()
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        return nil
+    }
+
+    private func configureLayer() {
+        wantsLayer = true
+        layer?.backgroundColor = indicatorColor.cgColor
+        layer?.cornerRadius = 3
+        layer?.borderWidth = 0.5
+        layer?.borderColor = NSColor.black.withAlphaComponent(0.24).cgColor
+        layer?.zPosition = 100
     }
 }
 

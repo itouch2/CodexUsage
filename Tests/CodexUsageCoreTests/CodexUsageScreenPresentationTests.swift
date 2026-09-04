@@ -80,6 +80,19 @@ final class CodexUsageScreenPresentationTests: XCTestCase {
         XCTAssertFalse(source.contains("editWidgetOnDesktop"))
     }
 
+    func testMenuBarPalettePickerAlignsItsVisibleControlToTheTrailingEdge() throws {
+        let source = try appSource("CodexUsageDesktopWidgetView.swift")
+        let picker = try sourceSection(
+            in: source,
+            from: "struct CodexUsagePalettePicker",
+            to: "struct CodexUsageDesktopWidgetView"
+        )
+
+        XCTAssertTrue(picker.contains(
+            ".frame(width: 138, alignment: .trailing)"
+        ))
+    }
+
     func testInspectorOmitsOnlyTheTwoScreenshotIndicatedDividers() throws {
         let source = try appSource("WidgetInspectorView.swift")
         let desktopToAppearance = try sourceSection(
@@ -268,6 +281,112 @@ final class CodexUsageScreenPresentationTests: XCTestCase {
         XCTAssertTrue(source.contains("accessibilityLabel"))
     }
 
+    func testMenuBarBridgeTargetsTheNativeStatusItemButton() throws {
+        let source = try appSource("CodexUsageMenuBarLabel.swift")
+
+        XCTAssertTrue(source.contains(
+            "StatusItemBridge("
+        ))
+        XCTAssertTrue(source.contains("toolTip: accessibilityLabel"))
+        XCTAssertTrue(source.contains("resetBadge: resetBadge"))
+        XCTAssertTrue(source.contains("NSStatusBarButton"))
+        XCTAssertTrue(source.contains("for window in NSApp.windows"))
+        XCTAssertTrue(source.contains(
+            "findStatusBarButton(in: window.contentView)"
+        ))
+        XCTAssertTrue(source.contains("statusBarButton.toolTip = toolTip"))
+    }
+
+    func testMenuBarLabelMarksResetSignalsWithACompactStatusDot() throws {
+        let app = try appSource("CodexUsageApp.swift")
+        let label = try appSource("CodexUsageMenuBarLabel.swift")
+
+        XCTAssertTrue(app.contains(
+            "CodexResetRadarPresentation.menuBarBadge"
+        ))
+        XCTAssertTrue(label.contains("let resetBadge: String?"))
+        XCTAssertTrue(label.contains("Color.clear"))
+        XCTAssertTrue(label.contains(".frame(width: 6, height: 17)"))
+        XCTAssertTrue(label.contains("StatusItemResetIndicatorView"))
+        XCTAssertTrue(label.contains("statusBarButton.addSubview("))
+        XCTAssertTrue(label.contains(".systemGreen"))
+        XCTAssertTrue(label.contains(".systemOrange"))
+        XCTAssertTrue(label.contains("layer?.cornerRadius = 3"))
+        XCTAssertTrue(label.contains("override func hitTest"))
+        XCTAssertTrue(label.contains("return nil"))
+        XCTAssertFalse(label.contains("Circle()"))
+        XCTAssertFalse(label.contains("resetIndicatorColor"))
+        XCTAssertFalse(label.contains(".overlay(alignment: .topTrailing)"))
+        XCTAssertFalse(label.contains(".padding(.trailing, 4)"))
+        XCTAssertFalse(label.contains(".offset("))
+        XCTAssertFalse(label.contains("ZStack(alignment: .topTrailing)"))
+        XCTAssertFalse(label.contains("Text(resetBadge)"))
+        XCTAssertFalse(label.contains("Image(systemName: \"bell.badge.fill\")"))
+    }
+
+    func testClickingMenuBarItemAcknowledgesTheCurrentResetSignal() throws {
+        let app = try appSource("CodexUsageApp.swift")
+        let label = try appSource("CodexUsageMenuBarLabel.swift")
+
+        XCTAssertTrue(app.contains(
+            "@AppStorage(CodexResetMenuBarAcknowledgement.defaultsKey)"
+        ))
+        XCTAssertTrue(app.contains(
+            "acknowledgedSignalID: acknowledgedResetSignalID"
+        ))
+        XCTAssertTrue(app.contains(
+            "acknowledgedResetSignalID = menuBarSignalID"
+        ))
+        XCTAssertTrue(label.contains("let onStatusItemClick: () -> Void"))
+        XCTAssertTrue(label.contains(
+            "NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown)"
+        ))
+        XCTAssertTrue(label.contains("onStatusItemClick()"))
+        XCTAssertTrue(label.contains("NSEvent.removeMonitor(clickMonitor)"))
+        XCTAssertTrue(label.contains("return event"))
+    }
+
+    func testMenuPopoverLeadsWithAHighContrastResetBanner() throws {
+        let source = try appSource("CodexUsageApp.swift")
+        let menu = try sourceSection(
+            in: source,
+            from: "private struct CodexUsageMenuBarView",
+            to: "private struct ResetSignalBanner"
+        )
+        let bannerStart = try XCTUnwrap(
+            source.range(of: "private struct ResetSignalBanner")?.lowerBound
+        )
+        let banner = source[bannerStart...]
+
+        XCTAssertLessThan(
+            try XCTUnwrap(menu.range(of: "resetSignalBanner")?.lowerBound),
+            try XCTUnwrap(menu.range(of: "title: \"Account\"")?.lowerBound)
+        )
+        XCTAssertTrue(banner.contains("Text(\"Reset confirmed\")"))
+        XCTAssertTrue(banner.contains("Text(\"Reset watch\")"))
+        XCTAssertTrue(banner.contains("RoundedRectangle(cornerRadius: 12"))
+        XCTAssertTrue(banner.contains("Color.green"))
+        XCTAssertTrue(banner.contains("Color.orange"))
+    }
+
+    func testDesktopWidgetUsesAHighContrastResetBadge() throws {
+        let source = try appSource("CodexUsageDesktopWidgetView.swift")
+        let radar = try sourceSection(
+            in: source,
+            from: "private var resetRadarBadge: some View",
+            to: "private func resetWatchBadgeLabel"
+        )
+
+        XCTAssertTrue(radar.contains(
+            "Image(systemName: \"checkmark.circle.fill\")"
+        ))
+        XCTAssertTrue(radar.contains("Capsule()"))
+        XCTAssertTrue(radar.contains("resetSignalColor.opacity(0.18)"))
+        XCTAssertTrue(radar.contains("Color.green.opacity(0.18)"))
+        XCTAssertFalse(radar.contains("Color.white.opacity(0.42)"))
+        XCTAssertFalse(radar.contains("Color.white.opacity(0.58)"))
+    }
+
     func testInspectorCanHideAppFromDockAndRestoreItOnLaunch() throws {
         let app = try appSource("CodexUsageApp.swift")
         let inspector = try appSource("WidgetInspectorView.swift")
@@ -409,11 +528,51 @@ final class CodexUsageScreenPresentationTests: XCTestCase {
         XCTAssertTrue(chart.contains("controller.palette.usageLineColor"))
     }
 
+    func testBuildFiveLandingPromotesTheMenuResetIndicator() throws {
+        let landing = try repositorySource("docs/landing/index.html")
+        let vercel = try repositorySource("docs/vercel.json")
+        let packageApp = try repositorySource("scripts/package_app.sh")
+        let packageRelease = try repositorySource(
+            "scripts/package_release.sh"
+        )
+
+        XCTAssertTrue(landing.contains(
+            "codex-usage-menu-reset-indicator.png"
+        ))
+        XCTAssertTrue(landing.contains(
+            "Codex Usage menu bar reset indicator"
+        ))
+        XCTAssertTrue(landing.contains("Codex-Usage-0.1.0-5.dmg"))
+        XCTAssertFalse(landing.contains("Codex-Usage-0.1.0-4.dmg"))
+        XCTAssertTrue(vercel.contains("Codex-Usage-0.1.0-5.dmg"))
+        XCTAssertFalse(vercel.contains("Codex-Usage-0.1.0-4.dmg"))
+        XCTAssertTrue(packageApp.contains(
+            "BUILD_NUMBER=\"${BUILD_NUMBER:-5}\""
+        ))
+        XCTAssertTrue(packageRelease.contains(
+            "BUILD_NUMBER=\"${BUILD_NUMBER:-5}\""
+        ))
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: repositoryRoot.appendingPathComponent(
+                    "docs/images/codex-usage-menu-reset-indicator.png"
+                ).path
+            )
+        )
+    }
+
     private func appSource(_ filename: String) throws -> String {
         try String(
             contentsOf: repositoryRoot.appendingPathComponent(
                 "Sources/CodexUsageApp/\(filename)"
             ),
+            encoding: .utf8
+        )
+    }
+
+    private func repositorySource(_ path: String) throws -> String {
+        try String(
+            contentsOf: repositoryRoot.appendingPathComponent(path),
             encoding: .utf8
         )
     }

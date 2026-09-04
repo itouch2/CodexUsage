@@ -130,6 +130,13 @@ final class CodexResetRadarTests: XCTestCase {
             ),
             "RESET WATCH 78%"
         )
+        XCTAssertEqual(
+            CodexResetRadarPresentation.menuBarBadge(
+                snapshot: snapshot,
+                now: Date(timeIntervalSince1970: 1_776_230_400)
+            ),
+            "WATCH"
+        )
     }
 
     func testPlansOneNotificationForANewActiveWatch() throws {
@@ -198,6 +205,97 @@ final class CodexResetRadarTests: XCTestCase {
                 now: now
             ),
             "RESET 2d ago"
+        )
+        XCTAssertEqual(
+            CodexResetRadarPresentation.menuBarBadge(
+                snapshot: snapshot,
+                now: try XCTUnwrap(snapshot.latestReset?.announcedAt)
+                    .addingTimeInterval(2 * 3_600)
+            ),
+            "RESET"
+        )
+        XCTAssertNil(
+            CodexResetRadarPresentation.menuBarBadge(
+                snapshot: snapshot,
+                now: try XCTUnwrap(snapshot.latestReset?.announcedAt)
+                    .addingTimeInterval(24 * 3_600)
+            )
+        )
+    }
+
+    func testOmitsMenuBarBadgeWhenThereIsNoResetSignal() throws {
+        let snapshot = CodexResetRadarSnapshot(
+            latestReset: nil,
+            activeWatch: nil,
+            latestPost: nil,
+            stats: CodexResetStats(
+                total: 0,
+                lastResetAt: nil,
+                daysSinceLast: nil,
+                averageIntervalDays: nil
+            ),
+            generatedAt: Date()
+        )
+
+        XCTAssertNil(
+            CodexResetRadarPresentation.menuBarBadge(
+                snapshot: snapshot,
+                now: Date()
+            )
+        )
+    }
+
+    func testAcknowledgedMenuBarSignalHidesItsBadge() throws {
+        let snapshot = try fixtureSnapshot(withActiveWatch: false)
+        let now = try XCTUnwrap(snapshot.latestReset?.announcedAt)
+            .addingTimeInterval(2 * 3_600)
+        let signalID = try XCTUnwrap(
+            CodexResetRadarPresentation.menuBarSignalID(
+                snapshot: snapshot,
+                now: now
+            )
+        )
+
+        XCTAssertEqual(
+            signalID,
+            "https://x.com/thsottiaux/status/1"
+        )
+        XCTAssertNil(
+            CodexResetRadarPresentation.menuBarBadge(
+                snapshot: snapshot,
+                now: now,
+                acknowledgedSignalID: signalID
+            )
+        )
+    }
+
+    func testNewMenuBarSignalReturnsAfterOlderAcknowledgement() throws {
+        var snapshot = try fixtureSnapshot(withActiveWatch: false)
+        let previousSignalID = try XCTUnwrap(
+            snapshot.latestReset?.source.url.absoluteString
+        )
+        let now = try XCTUnwrap(snapshot.latestReset?.announcedAt)
+            .addingTimeInterval(2 * 3_600)
+        snapshot.latestReset = CodexResetAnnouncement(
+            id: "2",
+            announcedAt: now.addingTimeInterval(-60),
+            text: "Another reset was confirmed.",
+            source: CodexResetSource(
+                type: "x_post",
+                author: "thsottiaux",
+                url: try XCTUnwrap(
+                    URL(string: "https://x.com/thsottiaux/status/2")
+                )
+            )
+        )
+
+        XCTAssertEqual(
+            CodexResetRadarPresentation.menuBarBadge(
+                snapshot: snapshot,
+                now: now,
+                acknowledgedSignalID: previousSignalID
+            ),
+            "RESET"
         )
     }
 
