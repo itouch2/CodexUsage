@@ -543,7 +543,10 @@ final class CodexUsageScreenPresentationTests: XCTestCase {
             "codex-usage-reset-alert-ready.png"
         ))
         XCTAssertTrue(landing.contains("feature-media-reset"))
-        XCTAssertTrue(landing.contains("Unread in the menu bar"))
+        XCTAssertTrue(landing.contains("Menu bar unread"))
+        XCTAssertTrue(landing.contains(
+            "left: auto; right: 14px; bottom: 13px; width: 60%;"
+        ))
         XCTAssertTrue(landing.contains(
             "Codex Usage menu bar reset indicator"
         ))
