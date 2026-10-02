@@ -119,7 +119,7 @@ struct CodexUsagePalettePicker: View {
     var body: some View {
         HStack(spacing: 8) {
             Text("Color")
-                .font(.caption)
+                .font(.system(size: 12))
 
             Spacer()
 
@@ -145,7 +145,8 @@ struct CodexUsagePalettePicker: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
-            .controlSize(.small)
+            .controlSize(.regular)
+            .font(.system(size: 12))
             .frame(width: 138, alignment: .trailing)
         }
     }
@@ -299,7 +300,37 @@ struct CodexUsageDesktopWidgetView: View {
 
     @ViewBuilder
     private var resetRadarBadge: some View {
-        if let watch = viewModel.resetRadar?.activeWatch {
+        if let scheduled = viewModel.resetRadar?.pendingScheduledReset {
+            Button {
+                controller.openResetSource(scheduled.source.url)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.badge")
+                        .foregroundStyle(resetSignalColor)
+                    Text(CodexResetRadarPresentation.scheduledHeadline(
+                        scheduled, now: viewModel.snapshot.generatedAt
+                    ))
+                    .foregroundStyle(Color.white.opacity(0.94))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                }
+                .font(.system(size: 10, weight: .bold))
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background {
+                    Capsule()
+                        .fill(resetSignalColor.opacity(
+                            controller.isResetSignalBadgeHovered ? 0.26 : 0.18
+                        ))
+                        .overlay {
+                            Capsule().stroke(resetSignalColor.opacity(0.72), lineWidth: 1)
+                        }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Open scheduled reset announcement on X")
+        } else if let watch = viewModel.resetRadar?.activeWatch {
             Button {
                 controller.openResetSource(watch.source.url)
             } label: {
@@ -642,6 +673,11 @@ struct CodexUsageDesktopWidgetView: View {
         let usedPercent = Int((consumedUsageProgress * 100).rounded())
         let usageSummary = "Codex usage, \(usedPercent) percent consumed, "
             + "\(elapsedPercent) percent of time elapsed"
+        if let scheduled = viewModel.resetRadar?.pendingScheduledReset {
+            return CodexResetRadarPresentation.scheduledHeadline(
+                scheduled, now: viewModel.snapshot.generatedAt
+            ) + ". " + usageSummary
+        }
         guard let watch = viewModel.resetRadar?.activeWatch else {
             return usageSummary
         }

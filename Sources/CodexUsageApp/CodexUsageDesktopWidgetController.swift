@@ -368,6 +368,7 @@ final class CodexUsageDesktopWidgetController: NSObject, ObservableObject, NSWin
         }
         window.isResetSignalBadgeAvailable = { [weak self] in
             self?.viewModel?.resetRadar?.activeWatch != nil
+                || self?.viewModel?.resetRadar?.pendingScheduledReset != nil
         }
         window.dragCompletionHandler = { [weak self] in
             self?.savePosition()

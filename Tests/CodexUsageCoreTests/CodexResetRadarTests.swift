@@ -156,7 +156,8 @@ final class CodexResetRadarTests: XCTestCase {
         XCTAssertNil(
             CodexResetRadarPresentation.notificationPlan(
                 snapshot: snapshot,
-                lastNotifiedSignalID: plan?.signalID
+                lastNotifiedWatchSignalID: plan?.signalID,
+                lastNotifiedResetSignalID: snapshot.latestReset?.source.url.absoluteString
             )
         )
     }
@@ -332,6 +333,139 @@ final class CodexResetRadarTests: XCTestCase {
         XCTAssertNil(restored.activeWatch)
         XCTAssertEqual(restored.latestReset, snapshot.latestReset)
         XCTAssertEqual(restored.stats, snapshot.stats)
+    }
+
+    // Captured API shape: an observed reset has no author, and scheduled_for
+    // has no fractional seconds even though announced_at does.
+    private func scheduledSnapshot() throws -> CodexResetRadarSnapshot {
+        let json = #"""
+        {"data":{"latest_reset":{"id":"observed-20260929T190000Z","reset_type":"banked","announced_at":"2026-09-29T19:00:00.000Z","text":"@theo Shhhhhh","source":{"type":"observed","url":"https://x.com/thsottiaux/status/2105120226027450685"}},"scheduled_reset":{"id":"2105843926221660585","status":"scheduled","reset_type":"regular","announced_at":"2026-10-02T02:14:51.000Z","scheduled_for":"2026-10-02T17:00:00Z","text":"Global reset landing tomorrow 10am PST for all paid ChatGPT accounts. Apologies for the slow start with GPT-6.1 Sol, it's now back to running at expected speeds after the massive load spike in the first two days.","source":{"type":"x_post","author":"thsottiaux","url":"https://x.com/thsottiaux/status/2105843926221660585"}},"active_watch":null,"stats":{"total":56,"last_reset_at":"2026-09-29T19:00:00.000Z","days_since_last":2.6,"avg_interval_days":6.9}},"meta":{"api_version":"v1","generated_at":"2026-10-02T10:23:09.427Z"}}
+        """#
+        return try CodexResetRadarSnapshot.decode(Data(json.utf8))
+    }
+
+    func testDecodesScheduledResetAndObservedSourceWithoutAuthor() throws {
+        let snapshot = try scheduledSnapshot()
+        XCTAssertNil(snapshot.latestReset?.source.author)
+        XCTAssertEqual(snapshot.latestReset?.id, "observed-20260929T190000Z")
+        let scheduled = try XCTUnwrap(snapshot.pendingScheduledReset)
+        XCTAssertEqual(scheduled.source.author, "thsottiaux")
+        XCTAssertEqual(scheduled.scheduledFor,
+                       ISO8601DateFormatter().date(from: "2026-10-02T17:00:00Z"))
+        XCTAssertNil(snapshot.activeWatch)
+    }
+
+    func testScheduledResetSurvivesEnrichmentExpirationAndCacheRoundTrip() throws {
+        var snapshot = try scheduledSnapshot()
+        snapshot.activeWatch = try fixtureSnapshot(withActiveWatch: true).activeWatch
+        let scheduled = try XCTUnwrap(snapshot.pendingScheduledReset)
+        let now = scheduled.scheduledFor.addingTimeInterval(-3600)
+        let enriched = snapshot.withLatestPost(nil).discardingExpiredWatch(at: now)
+        XCTAssertEqual(enriched.scheduledReset, scheduled)
+        XCTAssertNil(enriched.activeWatch)
+        let cache = CodexResetRadarCache(defaults: try makeIsolatedDefaults())
+        cache.save(enriched)
+        XCTAssertEqual(cache.load(now: now), enriched)
+    }
+
+    func testOldCacheWithoutScheduledFieldStillLoads() throws {
+        let snapshot = try fixtureSnapshot(withActiveWatch: false)
+        let encoded = try JSONEncoder().encode(snapshot)
+        let restored = try JSONDecoder().decode(CodexResetRadarSnapshot.self, from: encoded)
+        XCTAssertEqual(restored, snapshot)
+        XCTAssertNil(restored.scheduledReset)
+    }
+
+    func testScheduledCountdownAndMenuAcknowledgement() throws {
+        let snapshot = try scheduledSnapshot()
+        let scheduled = try XCTUnwrap(snapshot.pendingScheduledReset)
+        let now = scheduled.scheduledFor.addingTimeInterval(-8 * 3600)
+        XCTAssertEqual(CodexResetRadarPresentation.widgetBadge(snapshot: snapshot, now: now),
+                       "Reset within 8h 0m")
+        XCTAssertEqual(CodexResetRadarPresentation.menuBarBadge(snapshot: snapshot, now: now),
+                       "SCHEDULED")
+        XCTAssertNil(CodexResetRadarPresentation.menuBarBadge(
+            snapshot: snapshot, now: now, acknowledgedSignalID: scheduled.signalID
+        ))
+        XCTAssertEqual(CodexResetRadarPresentation.scheduledHeadline(
+            scheduled, now: scheduled.scheduledFor.addingTimeInterval(-1)), "Reset within 1m")
+    }
+
+    func testPassedDeadlineWaitsForConfirmationWithoutAnotherScheduledAlert() throws {
+        var snapshot = try scheduledSnapshot()
+        let scheduled = try XCTUnwrap(snapshot.pendingScheduledReset)
+        XCTAssertEqual(CodexResetRadarPresentation.widgetBadge(
+            snapshot: snapshot, now: scheduled.scheduledFor),
+            "Reset scheduled · Awaiting confirmation")
+        XCTAssertTrue(CodexResetRadarPresentation.notificationPlans(
+            snapshot: snapshot, lastNotifiedWatchSignalID: nil,
+            lastNotifiedResetSignalID: snapshot.latestReset?.source.url.absoluteString,
+            lastNotifiedScheduledSignalID: nil, now: scheduled.scheduledFor
+        ).isEmpty)
+        snapshot.latestReset?.announcedAt = scheduled.scheduledFor
+        XCTAssertNil(snapshot.pendingScheduledReset)
+    }
+
+    func testScheduledNotificationDeduplicatesAndRescheduleNotifiesAgain() throws {
+        var snapshot = try scheduledSnapshot()
+        let scheduled = try XCTUnwrap(snapshot.pendingScheduledReset)
+        let now = scheduled.scheduledFor.addingTimeInterval(-3600)
+        let resetID = snapshot.latestReset?.source.url.absoluteString
+        let plans = CodexResetRadarPresentation.notificationPlans(
+            snapshot: snapshot, lastNotifiedWatchSignalID: nil,
+            lastNotifiedResetSignalID: resetID, lastNotifiedScheduledSignalID: nil, now: now
+        )
+        XCTAssertEqual(plans.count, 1)
+        XCTAssertEqual(plans.first?.kind, .scheduled)
+        XCTAssertEqual(plans.first?.sourceURL, scheduled.source.url)
+        XCTAssertTrue(plans.first?.body.contains("Reset within 1h 0m") == true)
+        XCTAssertTrue(CodexResetRadarPresentation.notificationPlans(
+            snapshot: snapshot, lastNotifiedWatchSignalID: nil,
+            lastNotifiedResetSignalID: resetID,
+            lastNotifiedScheduledSignalID: scheduled.signalID, now: now
+        ).isEmpty)
+        snapshot.scheduledReset?.scheduledFor.addTimeInterval(3600)
+        XCTAssertEqual(CodexResetRadarPresentation.notificationPlans(
+            snapshot: snapshot, lastNotifiedWatchSignalID: nil,
+            lastNotifiedResetSignalID: resetID,
+            lastNotifiedScheduledSignalID: scheduled.signalID, now: now
+        ).first?.kind, .scheduled)
+        snapshot.scheduledReset?.status = "cancelled"
+        XCTAssertNil(snapshot.pendingScheduledReset)
+    }
+
+    func testNotifiedWatchDoesNotSuppressNewConfirmedReset() throws {
+        let snapshot = try fixtureSnapshot(withActiveWatch: true)
+        let plans = CodexResetRadarPresentation.notificationPlans(
+            snapshot: snapshot,
+            lastNotifiedWatchSignalID: snapshot.activeWatch?.source.url.absoluteString,
+            lastNotifiedResetSignalID: nil, lastNotifiedScheduledSignalID: nil
+        )
+        XCTAssertEqual(plans.map(\.kind), [.confirmed])
+        XCTAssertEqual(plans.first?.signalID, snapshot.latestReset?.source.url.absoluteString)
+    }
+
+    func testAllNewSignalKindsAreIndependentlyPlanned() throws {
+        var snapshot = try scheduledSnapshot()
+        snapshot.activeWatch = try fixtureSnapshot(withActiveWatch: true).activeWatch
+        let scheduled = try XCTUnwrap(snapshot.pendingScheduledReset)
+        let now = scheduled.scheduledFor.addingTimeInterval(-60)
+        snapshot.activeWatch?.expiresAt = scheduled.scheduledFor
+        let plans = CodexResetRadarPresentation.notificationPlans(
+            snapshot: snapshot, lastNotifiedWatchSignalID: nil,
+            lastNotifiedResetSignalID: nil, lastNotifiedScheduledSignalID: nil, now: now
+        )
+        XCTAssertEqual(plans.map(\.kind), [.scheduled, .watch, .confirmed])
+        // A confirmed reset can share its source with a previously scheduled one.
+        snapshot.latestReset?.source = scheduled.source
+        snapshot.latestReset?.announcedAt = scheduled.scheduledFor
+        let confirmed = CodexResetRadarPresentation.notificationPlans(
+            snapshot: snapshot,
+            lastNotifiedWatchSignalID: snapshot.activeWatch?.source.url.absoluteString,
+            lastNotifiedResetSignalID: nil,
+            lastNotifiedScheduledSignalID: scheduled.signalID, now: scheduled.scheduledFor
+        )
+        XCTAssertEqual(confirmed.map(\.kind), [.confirmed])
     }
 
     private func fixtureSnapshot(

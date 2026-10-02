@@ -26,9 +26,9 @@ final class CodexResetNotificationContractTests: XCTestCase {
         ))
         XCTAssertTrue(source.contains("lastNotifiedWatchSignalID:"))
         XCTAssertTrue(source.contains("lastNotifiedResetSignalID:"))
-        XCTAssertTrue(source.contains(
-            "snapshot.latestReset?.source.url.absoluteString"
-        ))
+        XCTAssertTrue(source.contains("lastNotifiedScheduledSignalID:"))
+        XCTAssertTrue(source.contains("defaults.set(plan.signalID, forKey: key)"))
+        XCTAssertFalse(source.contains("defaults.set(signalID, forKey: lastNotifiedResetSignalIDKey)"))
     }
 
     func testResetRadarProvidesExplicitNotificationControls() throws {

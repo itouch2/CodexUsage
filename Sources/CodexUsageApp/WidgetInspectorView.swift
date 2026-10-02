@@ -202,17 +202,32 @@ private struct ResetAlertsSettingsRow: View {
                 ResetAlertsControl(viewModel: viewModel)
             }
 
+            if viewModel.isResetRadarUnavailable, let radar = viewModel.resetRadar {
+                Label(
+                    "Couldn’t refresh · Last updated "
+                        + radar.generatedAt.formatted(date: .abbreviated, time: .shortened),
+                    systemImage: "exclamationmark.triangle"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+            }
+
             resetInformation
         }
     }
 
     @ViewBuilder
     private var resetInformation: some View {
-        if viewModel.resetRadar?.activeWatch != nil
+        if viewModel.resetRadar?.pendingScheduledReset != nil
+            || viewModel.resetRadar?.activeWatch != nil
             || viewModel.resetRadar?.latestReset != nil
             || viewModel.resetRadar?.latestPost != nil
         {
             VStack(alignment: .leading, spacing: 10) {
+                if let scheduled = viewModel.resetRadar?.pendingScheduledReset {
+                    scheduledResetContent(scheduled)
+                }
+
                 if let watch = viewModel.resetRadar?.activeWatch {
                     activeWatchContent(watch)
                 }
@@ -247,6 +262,23 @@ private struct ResetAlertsSettingsRow: View {
             Text("No reset information found.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private func scheduledResetContent(_ scheduled: CodexScheduledReset) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            radarHeading(title: "Reset scheduled", date: scheduled.announcedAt, color: .orange)
+            Text(CodexResetRadarPresentation.scheduledHeadline(
+                scheduled, now: viewModel.snapshot.generatedAt
+            ))
+            .font(.caption.weight(.medium))
+            Text("By " + scheduled.scheduledFor.formatted(date: .abbreviated, time: .shortened))
+                .font(.caption)
+            Text(CodexResetRadarPresentation.displayText(scheduled.text))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            sourceLink(scheduled.source.url)
         }
     }
 

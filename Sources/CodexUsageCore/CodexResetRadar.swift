@@ -2,10 +2,10 @@ import Foundation
 
 public struct CodexResetSource: Codable, Equatable, Sendable {
     public var type: String
-    public var author: String
+    public var author: String?
     public var url: URL
 
-    public init(type: String, author: String, url: URL) {
+    public init(type: String, author: String? = nil, url: URL) {
         self.type = type
         self.author = author
         self.url = url
@@ -140,6 +140,25 @@ public struct CodexResetAnnouncement: Codable, Equatable, Sendable {
     }
 }
 
+public struct CodexScheduledReset: Codable, Equatable, Sendable {
+    public var id: String
+    public var status: String
+    public var announcedAt: Date
+    public var scheduledFor: Date
+    public var text: String
+    public var source: CodexResetSource
+
+    public var signalID: String {
+        "scheduled:\(id):\(scheduledFor.timeIntervalSince1970)"
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, status, text, source
+        case announcedAt = "announced_at"
+        case scheduledFor = "scheduled_for"
+    }
+}
+
 public struct CodexResetWatch: Codable, Equatable, Sendable {
     public enum Level: String, Codable, Sendable {
         case elevated
@@ -213,6 +232,7 @@ public struct CodexResetRadarSnapshot: Codable, Equatable, Sendable {
     public var latestReset: CodexResetAnnouncement?
     public var activeWatch: CodexResetWatch?
     public var latestPost: CodexTiboPost?
+    public var scheduledReset: CodexScheduledReset?
     public var stats: CodexResetStats
     public var generatedAt: Date
 
@@ -220,12 +240,14 @@ public struct CodexResetRadarSnapshot: Codable, Equatable, Sendable {
         latestReset: CodexResetAnnouncement?,
         activeWatch: CodexResetWatch?,
         latestPost: CodexTiboPost? = nil,
+        scheduledReset: CodexScheduledReset? = nil,
         stats: CodexResetStats,
         generatedAt: Date
     ) {
         self.latestReset = latestReset
         self.activeWatch = activeWatch
         self.latestPost = latestPost
+        self.scheduledReset = scheduledReset
         self.stats = stats
         self.generatedAt = generatedAt
     }
@@ -235,7 +257,8 @@ public struct CodexResetRadarSnapshot: Codable, Equatable, Sendable {
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let value = try container.decode(String.self)
-            guard let date = ISO8601DateFormatter.codexResetRadar.date(from: value) else {
+            guard let date = ISO8601DateFormatter.codexResetRadar.date(from: value)
+                ?? ISO8601DateFormatter().date(from: value) else {
                 throw DecodingError.dataCorruptedError(
                     in: container,
                     debugDescription: "Invalid ISO 8601 date"
@@ -248,9 +271,22 @@ public struct CodexResetRadarSnapshot: Codable, Equatable, Sendable {
             latestReset: response.data.latestReset,
             activeWatch: response.data.activeWatch,
             latestPost: nil,
+            scheduledReset: response.data.scheduledReset,
             stats: response.data.stats,
             generatedAt: response.meta.generatedAt
         )
+    }
+
+    // A passed deadline is not confirmation. Keep it pending until the feed
+    // removes it, changes its status, or reports a reset at/after that deadline.
+    public var pendingScheduledReset: CodexScheduledReset? {
+        guard let scheduledReset, scheduledReset.status == "scheduled" else {
+            return nil
+        }
+        if let latestReset, latestReset.announcedAt >= scheduledReset.scheduledFor {
+            return nil
+        }
+        return scheduledReset
     }
 
     public func withLatestPost(_ latestPost: CodexTiboPost?) -> Self {
@@ -258,6 +294,7 @@ public struct CodexResetRadarSnapshot: Codable, Equatable, Sendable {
             latestReset: latestReset,
             activeWatch: activeWatch,
             latestPost: latestPost,
+            scheduledReset: scheduledReset,
             stats: stats,
             generatedAt: generatedAt
         )
@@ -271,6 +308,7 @@ public struct CodexResetRadarSnapshot: Codable, Equatable, Sendable {
             latestReset: latestReset,
             activeWatch: nil,
             latestPost: latestPost,
+            scheduledReset: scheduledReset,
             stats: stats,
             generatedAt: generatedAt
         )
@@ -278,6 +316,11 @@ public struct CodexResetRadarSnapshot: Codable, Equatable, Sendable {
 }
 
 public struct CodexResetNotificationPlan: Equatable, Sendable {
+    public enum Kind: String, Sendable {
+        case watch, scheduled, confirmed
+    }
+
+    public var kind: Kind
     public var signalID: String
     public var title: String
     public var body: String
@@ -287,8 +330,10 @@ public struct CodexResetNotificationPlan: Equatable, Sendable {
         signalID: String,
         title: String,
         body: String,
-        sourceURL: URL
+        sourceURL: URL,
+        kind: Kind = .confirmed
     ) {
+        self.kind = kind
         self.signalID = signalID
         self.title = title
         self.body = body
@@ -303,11 +348,13 @@ private struct CodexResetRadarResponse: Decodable {
     struct Payload: Decodable {
         var latestReset: CodexResetAnnouncement?
         var activeWatch: CodexResetWatch?
+        var scheduledReset: CodexScheduledReset?
         var stats: CodexResetStats
 
         private enum CodingKeys: String, CodingKey {
             case latestReset = "latest_reset"
             case activeWatch = "active_watch"
+            case scheduledReset = "scheduled_reset"
             case stats
         }
     }
@@ -367,31 +414,69 @@ public enum CodexResetRadarPresentation {
         lastNotifiedWatchSignalID: String?,
         lastNotifiedResetSignalID: String?
     ) -> CodexResetNotificationPlan? {
-        guard let snapshot else { return nil }
-        if let watch = snapshot.activeWatch {
-            let signalID = watch.source.url.absoluteString
-            guard signalID != lastNotifiedWatchSignalID else { return nil }
-            return CodexResetNotificationPlan(
-                signalID: signalID,
-                title: "Codex reset watch",
-                body: watchHeadline(watch)
-                    ?? "A new reset signal was detected.",
-                sourceURL: watch.source.url
-            )
-        }
+        notificationPlans(
+            snapshot: snapshot,
+            lastNotifiedWatchSignalID: lastNotifiedWatchSignalID,
+            lastNotifiedResetSignalID: lastNotifiedResetSignalID,
+            lastNotifiedScheduledSignalID: nil
+        ).first
+    }
 
-        guard let reset = snapshot.latestReset else { return nil }
-        let signalID = reset.source.url.absoluteString
-        guard signalID != lastNotifiedResetSignalID else { return nil }
-        let announcement = displayText(reset.text)
-        return CodexResetNotificationPlan(
-            signalID: signalID,
-            title: "Codex reset confirmed",
-            body: announcement.isEmpty
-                ? "A new Codex usage reset was confirmed."
-                : announcement,
-            sourceURL: reset.source.url
-        )
+    public static func notificationPlans(
+        snapshot: CodexResetRadarSnapshot?,
+        lastNotifiedWatchSignalID: String?,
+        lastNotifiedResetSignalID: String?,
+        lastNotifiedScheduledSignalID: String?,
+        now: Date = Date()
+    ) -> [CodexResetNotificationPlan] {
+        guard let snapshot else { return [] }
+        var plans: [CodexResetNotificationPlan] = []
+        if let scheduled = snapshot.pendingScheduledReset,
+           scheduled.scheduledFor > now,
+           scheduled.signalID != lastNotifiedScheduledSignalID {
+            plans.append(CodexResetNotificationPlan(
+                signalID: scheduled.signalID,
+                title: "Codex reset scheduled",
+                body: scheduledHeadline(scheduled, now: now) + " · By "
+                    + scheduled.scheduledFor.formatted(date: .abbreviated, time: .shortened),
+                sourceURL: scheduled.source.url,
+                kind: .scheduled
+            ))
+        }
+        if let watch = snapshot.activeWatch,
+           watch.source.url.absoluteString != lastNotifiedWatchSignalID {
+            plans.append(CodexResetNotificationPlan(
+                signalID: watch.source.url.absoluteString,
+                title: "Codex reset watch",
+                body: watchHeadline(watch) ?? "A new reset signal was detected.",
+                sourceURL: watch.source.url,
+                kind: .watch
+            ))
+        }
+        if let reset = snapshot.latestReset,
+           reset.source.url.absoluteString != lastNotifiedResetSignalID {
+            let announcement = displayText(reset.text)
+            plans.append(CodexResetNotificationPlan(
+                signalID: reset.source.url.absoluteString,
+                title: "Codex reset confirmed",
+                body: announcement.isEmpty
+                    ? "A new Codex usage reset was confirmed." : announcement,
+                sourceURL: reset.source.url,
+                kind: .confirmed
+            ))
+        }
+        return plans
+    }
+
+    public static func scheduledHeadline(
+        _ scheduled: CodexScheduledReset, now: Date = Date()
+    ) -> String {
+        let seconds = scheduled.scheduledFor.timeIntervalSince(now)
+        guard seconds > 0 else { return "Reset scheduled · Awaiting confirmation" }
+        let minutes = max(1, Int(ceil(seconds / 60)))
+        let duration = minutes >= 60
+            ? "\(minutes / 60)h \(minutes % 60)m" : "\(minutes)m"
+        return "Reset within \(duration)"
     }
 
     public static func relativeAge(since date: Date, now: Date = Date()) -> String {
@@ -415,6 +500,9 @@ public enum CodexResetRadarPresentation {
         now: Date = Date()
     ) -> String? {
         guard let snapshot else { return nil }
+        if let scheduled = snapshot.pendingScheduledReset {
+            return scheduledHeadline(scheduled, now: now)
+        }
         if let watch = snapshot.activeWatch {
             if let chance = watch.resetChancePercent {
                 return "RESET WATCH \(chance)%"
@@ -436,6 +524,9 @@ public enum CodexResetRadarPresentation {
         else {
             return nil
         }
+        if snapshot.pendingScheduledReset != nil {
+            return "SCHEDULED"
+        }
         if snapshot.activeWatch != nil {
             return "WATCH"
         }
@@ -447,6 +538,9 @@ public enum CodexResetRadarPresentation {
         now: Date = Date()
     ) -> String? {
         guard let snapshot else { return nil }
+        if let scheduled = snapshot.pendingScheduledReset {
+            return scheduled.signalID
+        }
         if let watch = snapshot.activeWatch {
             return watch.source.url.absoluteString
         }

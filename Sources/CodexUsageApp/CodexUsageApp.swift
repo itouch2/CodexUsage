@@ -84,7 +84,8 @@ struct CodexUsageApp: App {
 
         MenuBarExtra {
             CodexUsageMenuBarView(viewModel: viewModel)
-                .frame(width: 340)
+                .frame(width: 320)
+                .modifier(MenuPopoverGlass())
         } label: {
             CodexUsageMenuBarLabel(
                 remainingPercent: viewModel.codexRemainingPercent,
@@ -133,6 +134,32 @@ final class CodexUsageAppDelegate: NSObject,
     }
 }
 
+private struct MenuPopoverGlass: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            if reduceTransparency {
+                content.containerBackground(
+                    Color(nsColor: .windowBackgroundColor), for: .window
+                )
+            } else {
+                // Let the native popover own the outer corner and clipping.
+                // A second rounded glass surface leaves a visible rim beneath it.
+                content.containerBackground(for: .window) {
+                    Color.clear.glassEffect(.regular, in: Rectangle())
+                }
+            }
+        } else if #available(macOS 15.0, *) {
+            content.containerBackground(.regularMaterial, for: .window)
+        } else {
+            // Older MenuBarExtra windows keep their native material.
+            content
+        }
+    }
+}
+
 private struct CodexUsageMenuBarView: View {
     @ObservedObject var viewModel: AgentUsageViewModel
     @ObservedObject private var widgetController =
@@ -140,10 +167,10 @@ private struct CodexUsageMenuBarView: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Codex Usage")
-                    .font(.headline)
+                    .font(.system(size: 14, weight: .semibold))
                 Spacer()
                 Button {
                     openWindow(id: "dashboard")
@@ -159,29 +186,28 @@ private struct CodexUsageMenuBarView: View {
 
             InfoCard(
                 title: "Account",
-                titleFont: .subheadline.weight(.semibold)
+                titleFont: .system(size: 12, weight: .semibold),
+                translucent: true
             ) {
-                if let remainingPercent = viewModel.codexRemainingPercent {
-                    Text("\(remainingPercent)% left")
-                        .font(.title3.monospacedDigit().weight(.semibold))
-                } else {
-                    Text("Quota unavailable")
-                        .font(.title3.weight(.semibold))
-                }
-
-                Text("\(viewModel.snapshot.sessions.count) local sessions")
-                    .font(.caption.monospacedDigit().weight(.medium))
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    if let remainingPercent = viewModel.codexRemainingPercent {
+                        Text("\(remainingPercent)% left")
+                            .font(.system(size: 20, weight: .semibold).monospacedDigit())
+                    } else {
+                        Text("Quota unavailable")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    Spacer(minLength: 0)
+                    Text(
+                        "Updated "
+                            + viewModel.snapshot.generatedAt.formatted(
+                                date: .omitted,
+                                time: .shortened
+                            )
+                    )
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
-
-                Text(
-                    "Updated "
-                        + viewModel.snapshot.generatedAt.formatted(
-                            date: .omitted,
-                            time: .shortened
-                        )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                }
 
                 if let radarBadge = CodexResetRadarPresentation.widgetBadge(
                     snapshot: viewModel.resetRadar,
@@ -191,22 +217,24 @@ private struct CodexUsageMenuBarView: View {
                         radarBadge,
                         systemImage: "antenna.radiowaves.left.and.right"
                     )
-                    .font(.caption.weight(.medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(
-                        viewModel.resetRadar?.activeWatch == nil
-                            ? Color.green
-                            : Color.orange
+                        viewModel.resetRadar?.activeWatch != nil
+                            || viewModel.resetRadar?.pendingScheduledReset != nil
+                            ? Color.orange
+                            : Color.green
                     )
                 }
             }
 
             InfoCard(
                 title: "Reset alerts",
-                titleFont: .subheadline.weight(.semibold)
+                titleFont: .system(size: 12, weight: .semibold),
+                translucent: true
             ) {
                 HStack(spacing: 10) {
                     Label("Reset signal notifications", systemImage: "bell")
-                        .font(.caption.weight(.medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.secondary)
 
                     Spacer(minLength: 8)
@@ -217,42 +245,48 @@ private struct CodexUsageMenuBarView: View {
 
             InfoCard(
                 title: "Desktop Widget",
-                titleFont: .subheadline.weight(.semibold)
+                titleFont: .system(size: 12, weight: .semibold),
+                translucent: true
             ) {
                 CodexUsagePalettePicker(controller: widgetController)
 
-                HStack {
-                    Button(
-                        widgetController.isEditing
-                            ? "Done Editing"
-                            : "Bring to Front"
-                    ) {
+                HStack(spacing: 8) {
+                    Button {
                         widgetController.toggleEditing()
+                    } label: {
+                        Text(widgetController.isEditing ? "Done Editing" : "Bring to Front")
+                            .frame(maxWidth: .infinity, minHeight: 24)
                     }
                     .disabled(!widgetController.isVisible)
 
-                    Spacer()
-
-                    if widgetController.isVisible {
-                        Button("Hide") {
+                    Button {
+                        if widgetController.isVisible {
                             widgetController.hide()
-                        }
-                    } else {
-                        Button("Show") {
+                        } else {
                             widgetController.show(viewModel: viewModel)
                         }
+                    } label: {
+                        Text(widgetController.isVisible ? "Hide" : "Show")
+                            .frame(maxWidth: .infinity, minHeight: 24)
                     }
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
             }
 
             HStack {
                 Spacer()
-                Button("Quit") {
+                Button {
                     NSApp.terminate(nil)
+                } label: {
+                    Text("Quit")
+                        .frame(minWidth: 48, minHeight: 20)
                 }
+                .buttonStyle(.bordered)
             }
         }
-        .padding(16)
+        .font(.system(size: 12))
+        .padding(14)
         .onAppear {
             viewModel.refresh()
         }
@@ -260,7 +294,15 @@ private struct CodexUsageMenuBarView: View {
 
     @ViewBuilder
     private var resetSignalBanner: some View {
-        if let watch = viewModel.resetRadar?.activeWatch {
+        if let scheduled = viewModel.resetRadar?.pendingScheduledReset {
+            ResetSignalBanner(
+                state: .scheduled,
+                detail: CodexResetRadarPresentation.scheduledHeadline(
+                    scheduled, now: viewModel.snapshot.generatedAt
+                ),
+                sourceURL: scheduled.source.url
+            )
+        } else if let watch = viewModel.resetRadar?.activeWatch {
             ResetSignalBanner(
                 state: .watch,
                 detail: CodexResetRadarPresentation.watchHeadline(watch)
@@ -286,6 +328,7 @@ private struct CodexUsageMenuBarView: View {
 private struct ResetSignalBanner: View {
     enum State {
         case watch
+        case scheduled
         case confirmed
     }
 
@@ -299,20 +342,23 @@ private struct ResetSignalBanner: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: symbolName)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
 
                 VStack(alignment: .leading, spacing: 2) {
                     switch state {
                     case .watch:
                         Text("Reset watch")
-                            .font(.subheadline.weight(.bold))
+                            .font(.system(size: 12, weight: .semibold))
+                    case .scheduled:
+                        Text("Reset scheduled")
+                            .font(.system(size: 12, weight: .semibold))
                     case .confirmed:
                         Text("Reset confirmed")
-                            .font(.subheadline.weight(.bold))
+                            .font(.system(size: 12, weight: .semibold))
                     }
 
                     Text(detail)
-                        .font(.caption.weight(.medium))
+                        .font(.system(size: 12, weight: .medium))
                         .lineLimit(1)
                 }
 
@@ -340,6 +386,8 @@ private struct ResetSignalBanner: View {
 
     private var symbolName: String {
         switch state {
+        case .scheduled:
+            return "clock.badge"
         case .watch:
             return "bell.badge.fill"
         case .confirmed:
@@ -349,7 +397,7 @@ private struct ResetSignalBanner: View {
 
     private var backgroundColor: Color {
         switch state {
-        case .watch:
+        case .watch, .scheduled:
             return Color.orange
         case .confirmed:
             return Color.green

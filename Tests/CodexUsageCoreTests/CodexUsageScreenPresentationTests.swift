@@ -561,10 +561,10 @@ final class CodexUsageScreenPresentationTests: XCTestCase {
         XCTAssertTrue(vercel.contains("Codex-Usage-0.1.0-5.dmg"))
         XCTAssertFalse(vercel.contains("Codex-Usage-0.1.0-4.dmg"))
         XCTAssertTrue(packageApp.contains(
-            "BUILD_NUMBER=\"${BUILD_NUMBER:-5}\""
+            "BUILD_NUMBER=\"${BUILD_NUMBER:-6}\""
         ))
         XCTAssertTrue(packageRelease.contains(
-            "BUILD_NUMBER=\"${BUILD_NUMBER:-5}\""
+            "BUILD_NUMBER=\"${BUILD_NUMBER:-6}\""
         ))
         XCTAssertTrue(
             FileManager.default.fileExists(

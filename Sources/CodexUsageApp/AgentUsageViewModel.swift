@@ -125,7 +125,7 @@ final class AgentUsageViewModel: ObservableObject {
                     .notifyIfNeeded(next)
                 isResetRadarUnavailable = false
             } catch {
-                isResetRadarUnavailable = resetRadar == nil
+                isResetRadarUnavailable = true
             }
             isResetRadarRefreshing = false
         }

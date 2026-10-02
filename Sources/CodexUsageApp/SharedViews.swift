@@ -32,25 +32,38 @@ struct StatusPill: View {
 struct InfoCard<Content: View>: View {
     var title: String
     var titleFont: Font = .headline
+    var translucent = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @ViewBuilder var content: Content
 
+    private var usesTranslucentFill: Bool {
+        translucent && !reduceTransparency
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: translucent ? 6 : 8) {
             Text(title)
                 .font(titleFont)
 
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: translucent ? 10 : 14) {
                 content
             }
-            .padding(16)
+            .padding(translucent ? 12 : 16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                Color.codexUsageCardFill,
+                usesTranslucentFill
+                    ? Color.primary.opacity(0.035)
+                    : Color.codexUsageCardFill,
                 in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.codexUsageCardStroke, lineWidth: 1)
+                    .stroke(
+                        usesTranslucentFill
+                            ? Color.primary.opacity(0.07)
+                            : Color.codexUsageCardStroke,
+                        lineWidth: 0.5
+                    )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

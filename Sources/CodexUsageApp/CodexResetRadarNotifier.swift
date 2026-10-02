@@ -29,6 +29,8 @@ final class CodexResetRadarNotifier {
         "codexUsage.resetRadar.lastNotifiedSignalID"
     private let lastNotifiedResetSignalIDKey =
         "codexUsage.resetRadar.lastNotifiedResetSignalID"
+    private let lastNotifiedScheduledSignalIDKey =
+        "codexUsage.resetRadar.lastNotifiedScheduledSignalID"
     private var pendingSignalIDs: Set<String> = []
 
     init(
@@ -79,44 +81,47 @@ final class CodexResetRadarNotifier {
         let lastResetSignalID = defaults.string(
             forKey: lastNotifiedResetSignalIDKey
         )
-        guard let plan = CodexResetRadarPresentation.notificationPlan(
+        let plans = CodexResetRadarPresentation.notificationPlans(
             snapshot: snapshot,
             lastNotifiedWatchSignalID: lastWatchSignalID,
-            lastNotifiedResetSignalID: lastResetSignalID
-        ) else {
-            return authorization
-        }
-        guard !pendingSignalIDs.contains(plan.signalID) else {
-            return authorization
-        }
-        pendingSignalIDs.insert(plan.signalID)
-
-        defer { pendingSignalIDs.remove(plan.signalID) }
-        do {
-            let content = UNMutableNotificationContent()
-            content.title = plan.title
-            content.body = plan.body
-            content.sound = .default
-            content.userInfo = [
-                "sourceURL": plan.sourceURL.absoluteString
-            ]
-            let request = UNNotificationRequest(
-                identifier: "codexUsage.resetRadar.watch",
-                content: content,
-                trigger: nil
+            lastNotifiedResetSignalID: lastResetSignalID,
+            lastNotifiedScheduledSignalID: defaults.string(
+                forKey: lastNotifiedScheduledSignalIDKey
             )
-            try await center.add(request)
-            if let signalID = snapshot?.activeWatch?.source.url.absoluteString {
-                defaults.set(signalID, forKey: lastNotifiedWatchSignalIDKey)
+        )
+        var result = authorization
+        for plan in plans {
+            let key: String
+            switch plan.kind {
+            case .watch: key = lastNotifiedWatchSignalIDKey
+            case .scheduled: key = lastNotifiedScheduledSignalIDKey
+            case .confirmed: key = lastNotifiedResetSignalIDKey
             }
-            if let snapshot,
-               let signalID = snapshot.latestReset?.source.url.absoluteString {
-                defaults.set(signalID, forKey: lastNotifiedResetSignalIDKey)
+            // Recheck after any prior await; another refresh may have sent it.
+            guard defaults.string(forKey: key) != plan.signalID else { continue }
+            let pendingID = "\(plan.kind.rawValue):\(plan.signalID)"
+            guard !pendingSignalIDs.contains(pendingID) else { continue }
+            pendingSignalIDs.insert(pendingID)
+            defer { pendingSignalIDs.remove(pendingID) }
+            do {
+                let content = UNMutableNotificationContent()
+                content.title = plan.title
+                content.body = plan.body
+                content.sound = .default
+                content.userInfo = ["sourceURL": plan.sourceURL.absoluteString]
+                let request = UNNotificationRequest(
+                    identifier: "codexUsage.resetRadar.\(plan.kind.rawValue)",
+                    content: content,
+                    trigger: nil
+                )
+                try await center.add(request)
+                // Only mark the signal that was successfully submitted.
+                defaults.set(plan.signalID, forKey: key)
+            } catch {
+                result = .failed(error.localizedDescription)
             }
-            return authorization
-        } catch {
-            return .failed(error.localizedDescription)
         }
+        return result
     }
 
     func sendTestNotification() async -> CodexResetNotificationAuthorizationState {
