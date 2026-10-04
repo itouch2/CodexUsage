@@ -83,9 +83,10 @@ struct CodexUsageApp: App {
         }
 
         MenuBarExtra {
+            // Keep the system-owned menu background, corner mask and shadow.
+            // A custom window container background replaces that native surface.
             CodexUsageMenuBarView(viewModel: viewModel)
                 .frame(width: 320)
-                .modifier(MenuPopoverGlass())
         } label: {
             CodexUsageMenuBarLabel(
                 remainingPercent: viewModel.codexRemainingPercent,
@@ -131,32 +132,6 @@ final class CodexUsageAppDelegate: NSObject,
         ) -> Void
     ) {
         completionHandler([.banner, .sound])
-    }
-}
-
-private struct MenuPopoverGlass: ViewModifier {
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            if reduceTransparency {
-                content.containerBackground(
-                    Color(nsColor: .windowBackgroundColor), for: .window
-                )
-            } else {
-                // Let the native popover own the outer corner and clipping.
-                // A second rounded glass surface leaves a visible rim beneath it.
-                content.containerBackground(for: .window) {
-                    Color.clear.glassEffect(.regular, in: Rectangle())
-                }
-            }
-        } else if #available(macOS 15.0, *) {
-            content.containerBackground(.regularMaterial, for: .window)
-        } else {
-            // Older MenuBarExtra windows keep their native material.
-            content
-        }
     }
 }
 
